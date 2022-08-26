@@ -36,6 +36,7 @@ class APIToolkit {
         __classPrivateFieldSet(this, _APIToolkit_topic, topic, "f");
         __classPrivateFieldSet(this, _APIToolkit_pubsub, pubsub, "f");
         __classPrivateFieldSet(this, _APIToolkit_project_id, project_id, "f");
+        this.expressMiddleware = this.expressMiddleware.bind(this);
     }
     static initialize(apiKey, rootURL = "https://app.apitoolkit.io") {
         return __awaiter(this, void 0, void 0, function* () {

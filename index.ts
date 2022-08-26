@@ -45,6 +45,8 @@ export class APIToolkit {
     this.#topic = topic
     this.#pubsub = pubsub
     this.#project_id = project_id
+
+    this.expressMiddleware = this.expressMiddleware.bind(this)
   }
 
   static async initialize(apiKey: string, rootURL: string = "https://app.apitoolkit.io") {

@@ -25,7 +25,7 @@ Next, you can use the apitoolkit middleware for your respective routing library.
 Eg, for express JS, your final code would look like:
 
 ```js
-app.use(apitoolkitClient.expressMiddleware.bind(apitoolkitClient));
+app.use(apitoolkitClient.expressMiddleware);
 
 ```
 where app is your express js instance. 
