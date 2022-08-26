@@ -35,7 +35,7 @@ where app is your express js instance.
 Your final could might look something like this:
 
 
-```
+```js
 const express = require('express')
 const app = express()
 const port = 3000
