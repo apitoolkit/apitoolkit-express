@@ -129,7 +129,7 @@ class APIToolkit {
                     sdk_type: "JsExpress",
                     status_code: res.statusCode,
                     timestamp: new Date().toISOString(),
-                    url_path: req.url,
+                    url_path: req.route.path,
                 };
                 __classPrivateFieldGet(this, _APIToolkit_pubsub, "f").topic(__classPrivateFieldGet(this, _APIToolkit_topic, "f")).publishMessage({ json: payload });
             };
