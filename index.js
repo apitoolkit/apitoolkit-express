@@ -57,11 +57,8 @@ class APIToolkit {
         });
     }
     expressMiddleware(req, res, next) {
-        var _a;
         return __awaiter(this, void 0, void 0, function* () {
             const start_time = node_process_1.hrtime.bigint();
-            const oldWrite = res.write;
-            const oldEnd = res.end;
             const chunks = [];
             let respBody = '';
             let reqBody = "";
@@ -70,65 +67,76 @@ class APIToolkit {
                 // req.rawBody = data;
                 // next();
             });
-            const oldJson = res.json;
-            res.json = (val) => {
-                console.log("🔥VALUE", val);
-                return oldJson.apply(res, val);
+            const oldSend = res.send;
+            res.send = (val) => {
+                respBody = JSON.stringify(val);
+                return oldSend.apply(res, [val]);
             };
-            res.write = (chunk, ...args) => {
-                console.log("RES.WRITE :", chunk);
-                chunks.push(chunk);
-                // @ts-ignore
-                return oldWrite.apply(res, [chunk, ...args]);
+            // const oldWrite = res.write;
+            // const oldEnd = res.end;
+            // res.write = (chunk, ...args) => {
+            //   console.log("RES.WRITE :", chunk)
+            //   chunks.push(chunk);
+            //   // @ts-ignore
+            //   return oldWrite.apply(res, [chunk, ...args]);
+            // };
+            // res.end = (chunk: Function | any, encoding?: Function | string, callback?: Function) => {
+            //   if (chunk) chunks.push(chunk);
+            //   respBody = Buffer.concat(chunks).toString('base64');
+            //   // @ts-ignore
+            //   return oldEnd.apply(res, [chunk, encoding, callback]);
+            // };
+            const onRespFinished = (topic, req, res) => (err) => {
+                var _a, _b;
+                res.removeListener('close', onRespFinished(topic, req, res));
+                res.removeListener('error', onRespFinished(topic, req, res));
+                res.removeListener('finish', onRespFinished(topic, req, res));
+                const reqObjEntries = Object.entries(req.headers).map(([k, v]) => {
+                    if (typeof v === "string")
+                        return [k, [v]];
+                    return [k, v];
+                });
+                const reqHeaders = Object.fromEntries(reqObjEntries);
+                const resObjEntries = Object.entries(res.getHeaders()).map(([k, v]) => {
+                    if (typeof v === "string")
+                        return [k, [v]];
+                    return [k, v];
+                });
+                const resHeaders = Object.fromEntries(resObjEntries);
+                const queryObjEntries = Object.entries(req.query).map(([k, v]) => {
+                    if (typeof v === "string")
+                        return [k, [v]];
+                    return [k, v];
+                });
+                const queryParams = Object.fromEntries(queryObjEntries);
+                const pathParams = new Map(Object.entries((_a = req.params) !== null && _a !== void 0 ? _a : {}));
+                const payload = {
+                    duration: Number(node_process_1.hrtime.bigint() - start_time),
+                    host: req.hostname,
+                    method: req.method,
+                    path_params: pathParams,
+                    project_id: __classPrivateFieldGet(this, _APIToolkit_project_id, "f"),
+                    proto_minor: 1,
+                    proto_major: 1,
+                    query_params: queryParams,
+                    raw_url: req.url,
+                    referer: (_b = req.headers.referer) !== null && _b !== void 0 ? _b : '',
+                    request_body: Buffer.from(reqBody).toString('base64'),
+                    request_headers: reqHeaders,
+                    response_body: Buffer.from(respBody).toString('base64'),
+                    response_headers: resHeaders,
+                    sdk_type: "JsExpress",
+                    status_code: res.statusCode,
+                    timestamp: new Date().toISOString(),
+                    url_path: req.url,
+                };
+                __classPrivateFieldGet(this, _APIToolkit_pubsub, "f").topic(__classPrivateFieldGet(this, _APIToolkit_topic, "f")).publishMessage({ json: payload });
             };
-            res.end = (chunk, encoding, callback) => {
-                if (chunk)
-                    chunks.push(chunk);
-                respBody = Buffer.concat(chunks).toString('base64');
-                // @ts-ignore
-                return oldEnd.apply(res, [chunk, encoding, callback]);
-            };
+            const onRespFinishedCB = onRespFinished(__classPrivateFieldGet(this, _APIToolkit_pubsub, "f").topic(__classPrivateFieldGet(this, _APIToolkit_topic, "f")), req, res);
+            // res.on('close', onRespFinishedCB)
+            res.on('finish', onRespFinishedCB);
+            res.on('error', onRespFinishedCB);
             next();
-            const reqObjEntries = Object.entries(req.headers).map(([k, v]) => {
-                if (typeof v === "string")
-                    return [k, [v]];
-                return [k, v];
-            });
-            const reqHeaders = Object.fromEntries(reqObjEntries);
-            const resObjEntries = Object.entries(res.getHeaders()).map(([k, v]) => {
-                if (typeof v === "string")
-                    return [k, [v]];
-                return [k, v];
-            });
-            const resHeaders = Object.fromEntries(resObjEntries);
-            const queryObjEntries = Object.entries(req.query).map(([k, v]) => {
-                if (typeof v === "string")
-                    return [k, [v]];
-                return [k, v];
-            });
-            const queryParams = Object.fromEntries(queryObjEntries);
-            const payload = {
-                duration: Number(node_process_1.hrtime.bigint() - start_time),
-                host: req.hostname,
-                method: req.method,
-                path_params: new Map(Object.entries(req.params)),
-                project_id: __classPrivateFieldGet(this, _APIToolkit_project_id, "f"),
-                proto_minor: 1,
-                proto_major: 1,
-                query_params: queryParams,
-                raw_url: req.url,
-                referer: (_a = req.headers.referer) !== null && _a !== void 0 ? _a : '',
-                request_body: Buffer.from(reqBody).toString('base64'),
-                request_headers: reqHeaders,
-                response_body: respBody,
-                response_headers: resHeaders,
-                sdk_type: "JsExpress",
-                status_code: res.statusCode,
-                timestamp: new Date().toISOString(),
-                url_path: req.url,
-            };
-            console.log("🔥respBody", respBody, chunks);
-            __classPrivateFieldGet(this, _APIToolkit_pubsub, "f").topic(__classPrivateFieldGet(this, _APIToolkit_topic, "f")).publishMessage({ json: payload });
         });
     }
 }
