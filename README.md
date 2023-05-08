@@ -1,3 +1,9 @@
+<p>
+<img src="https://apitoolkit.io/assets/img/logo-full.svg" alt="APIToolkit" width="250px" />
+</p>
+
+
+
 ## APIToolkit expressjs  integration.
 
 The NODEJS SDK integration guide for APIToolkit. It monitors incoming traffic, gathers the requests and sends the request to the apitoolkit servers.
