@@ -1,4 +1,4 @@
-## APIToolkit nodejs integration.
+## APIToolkit expressjs  integration.
 
 The NODEJS SDK integration guide for APIToolkit. It monitors incoming traffic, gathers the requests and sends the request to the apitoolkit servers.
 
@@ -7,7 +7,7 @@ The NODEJS SDK integration guide for APIToolkit. It monitors incoming traffic, g
 Run the following command to install the package from your projects root:
 
 ```sh
-npm install apitoolkit-js
+npm install apitoolkit-express
 
 ```
 
