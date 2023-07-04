@@ -190,7 +190,6 @@ export class APIToolkit {
       })
       return JSON.stringify(bodyOB)
     } catch (error) {
-      console.log(error)
       return ""
     }
   }
