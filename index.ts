@@ -36,23 +36,34 @@ type Payload = {
   url_path: string
 }
 
+interface Initialize {
+  apiKey: string;
+  rootURL?: string;
+  redactHeaders?: string[];
+  redactRequestBody?: string[];
+  redactResponseBody?: string[]
+}
+
 export class APIToolkit {
   #topic: string;
   #pubsub: PubSub;
   #project_id: string;
-  #redactedHeaders: string[] = [];
-  #redactedReqBody: string[] = [];
-  #redactedRespBody: string[] = [];
+  #redactedHeaders: string[]
+  #redactedReqBody: string[]
+  #redactedRespBody: string[]
 
-  constructor(pubsub: PubSub, topic: string, project_id: string) {
+  constructor(pubsub: PubSub, topic: string, project_id: string, redactHeaders: string[], redactReqBody: string[], redactRespBody: string[]) {
     this.#topic = topic
     this.#pubsub = pubsub
     this.#project_id = project_id
+    this.#redactedHeaders = redactHeaders
+    this.#redactedReqBody = redactReqBody
+    this.#redactedRespBody = redactRespBody
 
     this.expressMiddleware = this.expressMiddleware.bind(this)
   }
 
-  static async initialize(apiKey: string, rootURL: string = "https://app.apitoolkit.io") {
+  static async initialize({ apiKey, rootURL = "https://app.apitoolkit.io", redactHeaders, redactRequestBody, redactResponseBody }: Initialize) {
     const resp = await fetch(rootURL + "/api/client_metadata", {
       method: 'GET',
       headers: {
@@ -68,7 +79,7 @@ export class APIToolkit {
       projectId: pubsub_project_id
     });
 
-    return new APIToolkit(pubsubClient, topic_id, project_id)
+    return new APIToolkit(pubsubClient, topic_id, project_id, redactHeaders || [], redactRequestBody || [], redactResponseBody || []);
   }
 
   public async expressMiddleware(req: Request, res: Response, next: NextFunction) {
