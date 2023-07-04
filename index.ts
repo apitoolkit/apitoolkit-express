@@ -46,16 +46,16 @@ export class APIToolkit {
   #pubsub: PubSub;
   #project_id: string;
   #redactHeaders: string[]
-  #redactReqBody: string[]
-  #redactRespBody: string[]
+  #redactRequestBody: string[]
+  #redactResponseBody: string[]
 
   constructor(pubsub: PubSub, topic: string, project_id: string, redactHeaders: string[], redactReqBody: string[], redactRespBody: string[]) {
     this.#topic = topic
     this.#pubsub = pubsub
     this.#project_id = project_id
     this.#redactHeaders = redactHeaders
-    this.#redactReqBody = redactReqBody
-    this.#redactRespBody = redactRespBody
+    this.#redactRequestBody = redactReqBody
+    this.#redactResponseBody = redactRespBody
 
     this.expressMiddleware = this.expressMiddleware.bind(this)
   }
@@ -149,9 +149,9 @@ export class APIToolkit {
         query_params: queryParams,
         raw_url: req.url,
         referer: req.headers.referer ?? '',
-        request_body: Buffer.from(this.redactFields(reqBody, this.#redactReqBody)).toString('base64'),
+        request_body: Buffer.from(this.redactFields(reqBody, this.#redactRequestBody)).toString('base64'),
         request_headers: this.redactHeaders(reqHeaders, this.#redactHeaders),
-        response_body: Buffer.from(this.redactFields(respBody, this.#redactRespBody)).toString('base64'),
+        response_body: Buffer.from(this.redactFields(respBody, this.#redactResponseBody)).toString('base64'),
         response_headers: this.redactHeaders(resHeaders, this.#redactHeaders),
         sdk_type: "JsExpress",
         status_code: res.statusCode,
