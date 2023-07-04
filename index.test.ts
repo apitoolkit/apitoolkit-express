@@ -14,7 +14,7 @@ describe('testing init', () => {
   })
 })
 
-describe('APIToolkit class', () => {
+describe('testing headers and jsonpath redaction', () => {
   let myClassInstance: APIToolkit;
 
   beforeEach(() => {

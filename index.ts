@@ -60,7 +60,7 @@ export class APIToolkit {
     this.expressMiddleware = this.expressMiddleware.bind(this)
   }
 
-  static async initialize({ apiKey, rootURL = "https://app.apitoolkit.io", redactHeaders, redactRequestBody, redactResponseBody }: Config) {
+  static async initialize({ apiKey, rootURL = "https://app.apitoolkit.io", redactHeaders = [], redactRequestBody = [], redactResponseBody = [] }: Config) {
     const resp = await fetch(rootURL + "/api/client_metadata", {
       method: 'GET',
       headers: {
@@ -76,7 +76,7 @@ export class APIToolkit {
       projectId: pubsub_project_id
     });
 
-    return new APIToolkit(pubsubClient, topic_id, project_id, redactHeaders || [], redactRequestBody || [], redactResponseBody || []);
+    return new APIToolkit(pubsubClient, topic_id, project_id, redactHeaders, redactRequestBody, redactResponseBody);
   }
 
   public async expressMiddleware(req: Request, res: Response, next: NextFunction) {
