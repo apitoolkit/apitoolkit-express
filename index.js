@@ -22,23 +22,30 @@ var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-var _APIToolkit_topic, _APIToolkit_pubsub, _APIToolkit_project_id;
+var _APIToolkit_topic, _APIToolkit_pubsub, _APIToolkit_project_id, _APIToolkit_redactHeaders, _APIToolkit_redactRequestBody, _APIToolkit_redactResponseBody;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.APIToolkit = void 0;
 const node_fetch_1 = __importDefault(require("node-fetch"));
 const pubsub_1 = require("@google-cloud/pubsub");
 const node_process_1 = require("node:process");
+const jsonpath_1 = __importDefault(require("jsonpath"));
 class APIToolkit {
-    constructor(pubsub, topic, project_id) {
+    constructor(pubsub, topic, project_id, redactHeaders, redactReqBody, redactRespBody) {
         _APIToolkit_topic.set(this, void 0);
         _APIToolkit_pubsub.set(this, void 0);
         _APIToolkit_project_id.set(this, void 0);
+        _APIToolkit_redactHeaders.set(this, void 0);
+        _APIToolkit_redactRequestBody.set(this, void 0);
+        _APIToolkit_redactResponseBody.set(this, void 0);
         __classPrivateFieldSet(this, _APIToolkit_topic, topic, "f");
         __classPrivateFieldSet(this, _APIToolkit_pubsub, pubsub, "f");
         __classPrivateFieldSet(this, _APIToolkit_project_id, project_id, "f");
+        __classPrivateFieldSet(this, _APIToolkit_redactHeaders, redactHeaders, "f");
+        __classPrivateFieldSet(this, _APIToolkit_redactRequestBody, redactReqBody, "f");
+        __classPrivateFieldSet(this, _APIToolkit_redactResponseBody, redactRespBody, "f");
         this.expressMiddleware = this.expressMiddleware.bind(this);
     }
-    static initialize(apiKey, rootURL = "https://app.apitoolkit.io") {
+    static initialize({ apiKey, rootURL = "https://app.apitoolkit.io", redactHeaders = [], redactRequestBody = [], redactResponseBody = [] }) {
         return __awaiter(this, void 0, void 0, function* () {
             const resp = yield (0, node_fetch_1.default)(rootURL + "/api/client_metadata", {
                 method: 'GET',
@@ -54,7 +61,7 @@ class APIToolkit {
             const pubsubClient = new pubsub_1.PubSub({
                 projectId: pubsub_project_id
             });
-            return new APIToolkit(pubsubClient, topic_id, project_id);
+            return new APIToolkit(pubsubClient, topic_id, project_id, redactHeaders, redactRequestBody, redactResponseBody);
         });
     }
     expressMiddleware(req, res, next) {
@@ -97,13 +104,13 @@ class APIToolkit {
                         return [k, [v]];
                     return [k, v];
                 });
-                const reqHeaders = Object.fromEntries(reqObjEntries);
+                const reqHeaders = new Map(Object.fromEntries(reqObjEntries));
                 const resObjEntries = Object.entries(res.getHeaders()).map(([k, v]) => {
                     if (typeof v === "string")
                         return [k, [v]];
                     return [k, v];
                 });
-                const resHeaders = Object.fromEntries(resObjEntries);
+                const resHeaders = new Map(Object.fromEntries(resObjEntries));
                 const queryObjEntries = Object.entries(req.query).map(([k, v]) => {
                     if (typeof v === "string")
                         return [k, [v]];
@@ -122,10 +129,10 @@ class APIToolkit {
                     query_params: queryParams,
                     raw_url: req.url,
                     referer: (_b = req.headers.referer) !== null && _b !== void 0 ? _b : '',
-                    request_body: Buffer.from(reqBody).toString('base64'),
-                    request_headers: reqHeaders,
-                    response_body: Buffer.from(respBody).toString('base64'),
-                    response_headers: resHeaders,
+                    request_body: Buffer.from(this.redactFields(reqBody, __classPrivateFieldGet(this, _APIToolkit_redactRequestBody, "f"))).toString('base64'),
+                    request_headers: this.redactHeaders(reqHeaders, __classPrivateFieldGet(this, _APIToolkit_redactHeaders, "f")),
+                    response_body: Buffer.from(this.redactFields(respBody, __classPrivateFieldGet(this, _APIToolkit_redactResponseBody, "f"))).toString('base64'),
+                    response_headers: this.redactHeaders(resHeaders, __classPrivateFieldGet(this, _APIToolkit_redactHeaders, "f")),
                     sdk_type: "JsExpress",
                     status_code: res.statusCode,
                     timestamp: new Date().toISOString(),
@@ -140,6 +147,30 @@ class APIToolkit {
             next();
         });
     }
+    redactHeaders(headers, headersToRedact) {
+        const redactedHeaders = new Map();
+        for (const [key, value] of headers.entries()) {
+            if (headersToRedact.includes(key)) {
+                redactedHeaders.set(key, ["[CLIENT_REDACTED]"]);
+            }
+            else {
+                redactedHeaders.set(key, value);
+            }
+        }
+        return redactedHeaders;
+    }
+    redactFields(body, fieldsToRedact) {
+        try {
+            const bodyOB = JSON.parse(body);
+            fieldsToRedact.forEach(path => {
+                jsonpath_1.default.apply(bodyOB, path, function () { return "[CLIENT_REDACTED]"; });
+            });
+            return JSON.stringify(bodyOB);
+        }
+        catch (error) {
+            return "";
+        }
+    }
 }
 exports.APIToolkit = APIToolkit;
-_APIToolkit_topic = new WeakMap(), _APIToolkit_pubsub = new WeakMap(), _APIToolkit_project_id = new WeakMap();
+_APIToolkit_topic = new WeakMap(), _APIToolkit_pubsub = new WeakMap(), _APIToolkit_project_id = new WeakMap(), _APIToolkit_redactHeaders = new WeakMap(), _APIToolkit_redactRequestBody = new WeakMap(), _APIToolkit_redactResponseBody = new WeakMap();
