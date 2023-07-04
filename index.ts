@@ -40,6 +40,9 @@ export class APIToolkit {
   #topic: string;
   #pubsub: PubSub;
   #project_id: string;
+  #redactedHeaders: string[] = [];
+  #redactedReqBody: string[] = [];
+  #redactedRespBody: string[] = [];
 
   constructor(pubsub: PubSub, topic: string, project_id: string) {
     this.#topic = topic
@@ -73,8 +76,8 @@ export class APIToolkit {
     const chunks: Uint8Array[] = [];
     let respBody: string = '';
     let reqBody = "";
-    req.on('data', function(chunk) { reqBody += chunk })
-    req.on('end', function() {
+    req.on('data', function (chunk) { reqBody += chunk })
+    req.on('end', function () {
       // req.rawBody = data;
       // next();
     })
@@ -112,13 +115,13 @@ export class APIToolkit {
         if (typeof v === "string") return [k, [v]]
         return [k, v]
       })
-      const reqHeaders = Object.fromEntries(reqObjEntries)
+      const reqHeaders = new Map<string, string[]>(Object.fromEntries(reqObjEntries))
 
       const resObjEntries = Object.entries(res.getHeaders()).map(([k, v]) => {
         if (typeof v === "string") return [k, [v]]
         return [k, v]
       })
-      const resHeaders = Object.fromEntries(resObjEntries)
+      const resHeaders = new Map<string, string[]>(Object.fromEntries(resObjEntries))
 
       const queryObjEntries = Object.entries(req.query).map(([k, v]) => {
         if (typeof v === "string") return [k, [v]]
@@ -139,9 +142,9 @@ export class APIToolkit {
         raw_url: req.url,
         referer: req.headers.referer ?? '',
         request_body: Buffer.from(reqBody).toString('base64'),
-        request_headers: reqHeaders,
+        request_headers: this.redactHeaders(reqHeaders, this.#redactedHeaders),
         response_body: Buffer.from(respBody).toString('base64'),
-        response_headers: resHeaders,
+        response_headers: this.redactHeaders(resHeaders, this.#redactedHeaders),
         sdk_type: "JsExpress",
         status_code: res.statusCode,
         timestamp: new Date().toISOString(),
@@ -157,4 +160,18 @@ export class APIToolkit {
 
     next()
   }
+
+  private redactHeaders(headers: Map<string, string[]>, keysToRedact: string[]): Map<string, string[]> {
+    const redactedHeaders: Map<string, string[]> = new Map<string, string[]>();
+
+    for (const [key, value] of headers.entries()) {
+      if (keysToRedact.includes(key)) {
+        redactedHeaders.set(key, ["[CLIENT_REDACTED]"]);
+      } else {
+        redactedHeaders.set(key, value);
+      }
+    }
+    return redactedHeaders;
+  }
+
 }
