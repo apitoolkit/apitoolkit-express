@@ -2,7 +2,7 @@ import fetch from 'node-fetch';
 import { PubSub, Topic } from '@google-cloud/pubsub';
 import { NextFunction, Request, Response } from 'express';
 import { hrtime } from 'node:process';
-
+import * as jsonpath from "jsonpath"
 export type Config = {
   rootURL?: string,
   apiKey: string,
