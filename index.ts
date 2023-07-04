@@ -3,6 +3,7 @@ import { PubSub, Topic } from '@google-cloud/pubsub';
 import { NextFunction, Request, Response } from 'express';
 import { hrtime } from 'node:process';
 import * as jsonpath from "jsonpath"
+
 export type Config = {
   rootURL?: string,
   apiKey: string,
@@ -152,9 +153,9 @@ export class APIToolkit {
         query_params: queryParams,
         raw_url: req.url,
         referer: req.headers.referer ?? '',
-        request_body: Buffer.from(reqBody).toString('base64'),
+        request_body: Buffer.from(this.redactFields(reqBody, this.#redactedReqBody)).toString('base64'),
         request_headers: this.redactHeaders(reqHeaders, this.#redactedHeaders),
-        response_body: Buffer.from(respBody).toString('base64'),
+        response_body: Buffer.from(this.redactFields(respBody, this.#redactedRespBody)).toString('base64'),
         response_headers: this.redactHeaders(resHeaders, this.#redactedHeaders),
         sdk_type: "JsExpress",
         status_code: res.statusCode,
@@ -172,11 +173,11 @@ export class APIToolkit {
     next()
   }
 
-  private redactHeaders(headers: Map<string, string[]>, keysToRedact: string[]): Map<string, string[]> {
+  private redactHeaders(headers: Map<string, string[]>, headersToRedact: string[]): Map<string, string[]> {
     const redactedHeaders: Map<string, string[]> = new Map<string, string[]>();
 
     for (const [key, value] of headers.entries()) {
-      if (keysToRedact.includes(key)) {
+      if (headersToRedact.includes(key)) {
         redactedHeaders.set(key, ["[CLIENT_REDACTED]"]);
       } else {
         redactedHeaders.set(key, value);
@@ -185,4 +186,15 @@ export class APIToolkit {
     return redactedHeaders;
   }
 
+  private redactFields(body: string, fieldsToRedact: string[]): string {
+    try {
+      const bodyOB = JSON.parse(body)
+      fieldsToRedact.forEach(path => {
+        jsonpath.apply(bodyOB, path, function () { return "[CLIENT_REDACTED]" });
+      })
+      return JSON.stringify(bodyOB)
+    } catch (error) {
+      return ""
+    }
+  }
 }
