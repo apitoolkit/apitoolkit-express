@@ -43,7 +43,7 @@ const app = express();
 const port = 3000;
 
 const apitoolkitClient = await APIToolkit.initialize({ apiKey: '<API-KEY>' });
-app.use(apitoolkitClient.expressMiddleware.bind(apitoolkitClient));
+app.use(apitoolkitClient.expressMiddleware);
 
 app.get('/', (req, res) => {
   res.send('Hello World!');
@@ -71,7 +71,7 @@ const apitoolkitClient = await APIToolkit.initialize({
   redactRequestBody: ['$.credit-card.cvv', '$.credit-card.name'], // Specified request bodies fields will be redacted
   redactResponseBody: ['$.message.error'], // Specified response body fields will be redacted
 });
-app.use(apitoolkitClient.expressMiddleware.bind(apitoolkitClient));
+app.use(apitoolkitClient.expressMiddleware);
 
 app.get('/', (req, res) => {
   res.send('Hello World!');
