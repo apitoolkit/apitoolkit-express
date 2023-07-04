@@ -2,11 +2,14 @@ import fetch from 'node-fetch';
 import { PubSub, Topic } from '@google-cloud/pubsub';
 import { NextFunction, Request, Response } from 'express';
 import { hrtime } from 'node:process';
-import * as jsonpath from "jsonpath"
+import jsonpath from "jsonpath"
 
 export type Config = {
-  rootURL?: string,
-  apiKey: string,
+  apiKey: string;
+  rootURL?: string;
+  redactHeaders?: string[];
+  redactRequestBody?: string[];
+  redactResponseBody?: string[]
 }
 
 type ClientMetadata = {
@@ -37,13 +40,6 @@ type Payload = {
   url_path: string
 }
 
-interface Initialize {
-  apiKey: string;
-  rootURL?: string;
-  redactHeaders?: string[];
-  redactRequestBody?: string[];
-  redactResponseBody?: string[]
-}
 
 export class APIToolkit {
   #topic: string;
@@ -64,7 +60,7 @@ export class APIToolkit {
     this.expressMiddleware = this.expressMiddleware.bind(this)
   }
 
-  static async initialize({ apiKey, rootURL = "https://app.apitoolkit.io", redactHeaders, redactRequestBody, redactResponseBody }: Initialize) {
+  static async initialize({ apiKey, rootURL = "https://app.apitoolkit.io", redactHeaders, redactRequestBody, redactResponseBody }: Config) {
     const resp = await fetch(rootURL + "/api/client_metadata", {
       method: 'GET',
       headers: {
@@ -194,6 +190,7 @@ export class APIToolkit {
       })
       return JSON.stringify(bodyOB)
     } catch (error) {
+      console.log(error)
       return ""
     }
   }
