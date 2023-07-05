@@ -28,12 +28,15 @@ describe('testing headers and jsonpath redaction', () => {
     const headers = new Map<string, string[]>();
     headers.set('Authorization', ['token']);
     headers.set('User-Agent', ['MyApp']);
+    headers.set('Content-Type', ['text/json']);
 
-    const headersToRedact = ['Authorization'];
+
+    const headersToRedact = ['Authorization', 'content-type'];
 
     const redactedHeaders = myClassInstance['redactHeaders'](headers, headersToRedact);
 
     expect(redactedHeaders.get('Authorization')).toEqual(['[CLIENT_REDACTED]']);
+    expect(redactedHeaders.get('Content-Type')).toEqual(['[CLIENT_REDACTED]']);
     expect(redactedHeaders.get('User-Agent')).toEqual(['MyApp']);
   });
 

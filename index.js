@@ -150,7 +150,7 @@ class APIToolkit {
     redactHeaders(headers, headersToRedact) {
         const redactedHeaders = new Map();
         for (const [key, value] of headers.entries()) {
-            if (headersToRedact.includes(key)) {
+            if (headersToRedact.some(header => header.includes(key) || header.includes(key.toLocaleLowerCase()))) {
                 redactedHeaders.set(key, ["[CLIENT_REDACTED]"]);
             }
             else {

@@ -173,7 +173,7 @@ export class APIToolkit {
     const redactedHeaders: Map<string, string[]> = new Map<string, string[]>();
 
     for (const [key, value] of headers.entries()) {
-      if (headersToRedact.includes(key)) {
+      if (headersToRedact.some(header => header.includes(key) || header.includes(key.toLocaleLowerCase()))) {
         redactedHeaders.set(key, ["[CLIENT_REDACTED]"]);
       } else {
         redactedHeaders.set(key, value);
