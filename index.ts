@@ -23,17 +23,17 @@ type Payload = {
   duration: number
   host: string
   method: string
-  path_params: Map<string, string>
+  path_params: Object
   project_id: string
   proto_major: number
   proto_minor: number
-  query_params: Map<string, string[]>
+  query_params: Object
   raw_url: string
   referer: string
   request_body: string
-  request_headers: Map<string, string[]>
+  request_headers: Object
   response_body: string
-  response_headers: Map<string, string[]>
+  response_headers: Object
   sdk_type: string
   status_code: number
   timestamp: string
@@ -41,7 +41,7 @@ type Payload = {
 }
 
 
-export class APIToolkit {
+export default class APIToolkit {
   #topic: string;
   #pubsub: PubSub;
   #project_id: string;
@@ -60,7 +60,7 @@ export class APIToolkit {
     this.expressMiddleware = this.expressMiddleware.bind(this)
   }
 
-  static async initialize({ apiKey, rootURL = "https://app.apitoolkit.io", redactHeaders = [], redactRequestBody = [], redactResponseBody = [] }: Config) {
+  static async NewClient({ apiKey, rootURL = "https://app.apitoolkit.io", redactHeaders = [], redactRequestBody = [], redactResponseBody = [] }: Config) {
     const resp = await fetch(rootURL + "/api/client_metadata", {
       method: 'GET',
       headers: {
@@ -123,20 +123,20 @@ export class APIToolkit {
         if (typeof v === "string") return [k, [v]]
         return [k, v]
       })
-      const reqHeaders = new Map<string, string[]>(Object.fromEntries(reqObjEntries))
+      const reqHeaders = Object.fromEntries(reqObjEntries)
 
       const resObjEntries = Object.entries(res.getHeaders()).map(([k, v]) => {
         if (typeof v === "string") return [k, [v]]
         return [k, v]
       })
-      const resHeaders = new Map<string, string[]>(Object.fromEntries(resObjEntries))
+      const resHeaders = Object.fromEntries(resObjEntries)
 
       const queryObjEntries = Object.entries(req.query).map(([k, v]) => {
         if (typeof v === "string") return [k, [v]]
         return [k, v]
       })
       const queryParams = Object.fromEntries(queryObjEntries)
-      const pathParams = new Map(Object.entries(req.params ?? {}))
+      const pathParams = req.params ?? {}
 
       const payload: Payload = {
         duration: Number(hrtime.bigint() - start_time),
@@ -169,17 +169,17 @@ export class APIToolkit {
     next()
   }
 
-  private redactHeaders(headers: Map<string, string[]>, headersToRedact: string[]): Map<string, string[]> {
-    const redactedHeaders: Map<string, string[]> = new Map<string, string[]>();
-
-    for (const [key, value] of headers.entries()) {
+  private redactHeaders(headers: any, headersToRedact: string[]) {
+    for (const [key, value] of Object.entries(headers)) {
       if (headersToRedact.some(header => header.includes(key) || header.includes(key.toLocaleLowerCase()))) {
-        redactedHeaders.set(key, ["[CLIENT_REDACTED]"]);
+        headers[key] = ["[CLIENT_REDACTED]"]
+      } else if (key === "Cookie" || key === "cookie") {
+        headers[key] = ["[CLIENT_REDACTED]"]
       } else {
-        redactedHeaders.set(key, value);
+        headers[key] = value;
       }
     }
-    return redactedHeaders;
+    return headers;
   }
 
   private redactFields(body: string, fieldsToRedact: string[]): string {

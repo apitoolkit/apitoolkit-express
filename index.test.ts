@@ -1,5 +1,5 @@
 import { Config } from './index';
-import { APIToolkit } from './index';
+import APIToolkit from './index';
 import { PubSub } from '@google-cloud/pubsub';
 
 
@@ -25,19 +25,15 @@ describe('testing headers and jsonpath redaction', () => {
   });
 
   it('should redact headers correctly', () => {
-    const headers = new Map<string, string[]>();
-    headers.set('Authorization', ['token']);
-    headers.set('User-Agent', ['MyApp']);
-    headers.set('Content-Type', ['text/json']);
-
+    const headers = { 'Authorization': ["token"], "User-Agent": ["MyApp"], "Content-Type": ["text/json"] }
 
     const headersToRedact = ['Authorization', 'content-type'];
 
     const redactedHeaders = myClassInstance['redactHeaders'](headers, headersToRedact);
 
-    expect(redactedHeaders.get('Authorization')).toEqual(['[CLIENT_REDACTED]']);
-    expect(redactedHeaders.get('Content-Type')).toEqual(['[CLIENT_REDACTED]']);
-    expect(redactedHeaders.get('User-Agent')).toEqual(['MyApp']);
+    expect(redactedHeaders['Authorization']).toEqual(['[CLIENT_REDACTED]']);
+    expect(redactedHeaders['Content-Type']).toEqual(['[CLIENT_REDACTED]']);
+    expect(redactedHeaders['User-Agent']).toEqual(['MyApp']);
   });
 
   it('should redact fields correctly', () => {
