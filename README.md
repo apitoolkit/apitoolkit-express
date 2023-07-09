@@ -20,7 +20,7 @@ npm install apitoolkit-express
 Intialize apitoolkit into your project is as simple as :
 
 ```js
-const apitoolkitClient = await APIToolkit.initialize('<API-KEY>');
+const apitoolkitClient = await APIToolkit.NewClient({ apiKey: '<API-KEY>' });
 ```
 where ```<API-KEY>``` is the API key which can be generated from your  [apitoolkit.io](apitoolkit.io) accoun
 
@@ -41,7 +41,7 @@ const express = require('express');
 const app = express();
 const port = 3000;
 
-const apitoolkitClient = await APIToolkit.initialize({ apiKey: '<API-KEY>' });
+const apitoolkitClient = await APIToolkit.NewClient({ apiKey: '<API-KEY>' });
 app.use(apitoolkitClient.expressMiddleware);
 
 app.get('/', (req, res) => {
@@ -64,7 +64,7 @@ const express = require('express');
 const app = express();
 const port = 3000;
 
-const apitoolkitClient = await APIToolkit.initialize({
+const apitoolkitClient = await APIToolkit.NewClient({
   apiKey: '<API-KEY>',
   redactHeaders: ['Content-Type', 'Authorization', 'Cookies'], // Specified headers will be redacted
   redactRequestBody: ['$.credit-card.cvv', '$.credit-card.name'], // Specified request bodies fields will be redacted
