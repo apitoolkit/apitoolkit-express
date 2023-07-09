@@ -1,4 +1,4 @@
-export default {
+module.exports = {
   preset: "ts-jest",
   // transform: { '^.+\\.ts?$': 'ts-jest' },
   transform: {

@@ -2,10 +2,14 @@ import fetch from 'node-fetch';
 import { PubSub, Topic } from '@google-cloud/pubsub';
 import { NextFunction, Request, Response } from 'express';
 import { hrtime } from 'node:process';
+import jsonpath from "jsonpath"
 
 export type Config = {
-  rootURL?: string,
-  apiKey: string,
+  apiKey: string;
+  rootURL?: string;
+  redactHeaders?: string[];
+  redactRequestBody?: string[];
+  redactResponseBody?: string[]
 }
 
 type ClientMetadata = {
@@ -19,37 +23,44 @@ type Payload = {
   duration: number
   host: string
   method: string
-  path_params: Map<string, string>
+  path_params: Object
   project_id: string
   proto_major: number
   proto_minor: number
-  query_params: Map<string, string[]>
+  query_params: Object
   raw_url: string
   referer: string
   request_body: string
-  request_headers: Map<string, string[]>
+  request_headers: Object
   response_body: string
-  response_headers: Map<string, string[]>
+  response_headers: Object
   sdk_type: string
   status_code: number
   timestamp: string
   url_path: string
 }
 
-export class APIToolkit {
+
+export default class APIToolkit {
   #topic: string;
   #pubsub: PubSub;
   #project_id: string;
+  #redactHeaders: string[]
+  #redactRequestBody: string[]
+  #redactResponseBody: string[]
 
-  constructor(pubsub: PubSub, topic: string, project_id: string) {
+  constructor(pubsub: PubSub, topic: string, project_id: string, redactHeaders: string[], redactReqBody: string[], redactRespBody: string[]) {
     this.#topic = topic
     this.#pubsub = pubsub
     this.#project_id = project_id
+    this.#redactHeaders = redactHeaders
+    this.#redactRequestBody = redactReqBody
+    this.#redactResponseBody = redactRespBody
 
     this.expressMiddleware = this.expressMiddleware.bind(this)
   }
 
-  static async initialize(apiKey: string, rootURL: string = "https://app.apitoolkit.io") {
+  static async NewClient({ apiKey, rootURL = "https://app.apitoolkit.io", redactHeaders = [], redactRequestBody = [], redactResponseBody = [] }: Config) {
     const resp = await fetch(rootURL + "/api/client_metadata", {
       method: 'GET',
       headers: {
@@ -65,7 +76,7 @@ export class APIToolkit {
       projectId: pubsub_project_id
     });
 
-    return new APIToolkit(pubsubClient, topic_id, project_id)
+    return new APIToolkit(pubsubClient, topic_id, project_id, redactHeaders, redactRequestBody, redactResponseBody);
   }
 
   public async expressMiddleware(req: Request, res: Response, next: NextFunction) {
@@ -73,8 +84,8 @@ export class APIToolkit {
     const chunks: Uint8Array[] = [];
     let respBody: string = '';
     let reqBody = "";
-    req.on('data', function(chunk) { reqBody += chunk })
-    req.on('end', function() {
+    req.on('data', function (chunk) { reqBody += chunk })
+    req.on('end', function () {
       // req.rawBody = data;
       // next();
     })
@@ -125,7 +136,7 @@ export class APIToolkit {
         return [k, v]
       })
       const queryParams = Object.fromEntries(queryObjEntries)
-      const pathParams = new Map(Object.entries(req.params ?? {}))
+      const pathParams = req.params ?? {}
 
       const payload: Payload = {
         duration: Number(hrtime.bigint() - start_time),
@@ -138,10 +149,10 @@ export class APIToolkit {
         query_params: queryParams,
         raw_url: req.url,
         referer: req.headers.referer ?? '',
-        request_body: Buffer.from(reqBody).toString('base64'),
-        request_headers: reqHeaders,
-        response_body: Buffer.from(respBody).toString('base64'),
-        response_headers: resHeaders,
+        request_body: Buffer.from(this.redactFields(reqBody, this.#redactRequestBody)).toString('base64'),
+        request_headers: this.redactHeaders(reqHeaders, this.#redactHeaders),
+        response_body: Buffer.from(this.redactFields(respBody, this.#redactResponseBody)).toString('base64'),
+        response_headers: this.redactHeaders(resHeaders, this.#redactHeaders),
         sdk_type: "JsExpress",
         status_code: res.statusCode,
         timestamp: new Date().toISOString(),
@@ -156,5 +167,30 @@ export class APIToolkit {
     res.on('error', onRespFinishedCB)
 
     next()
+  }
+
+  private redactHeaders(headers: any, headersToRedact: string[]) {
+    for (const [key, value] of Object.entries(headers)) {
+      if (headersToRedact.some(header => header.includes(key) || header.includes(key.toLocaleLowerCase()))) {
+        headers[key] = ["[CLIENT_REDACTED]"]
+      } else if (key === "Cookie" || key === "cookie") {
+        headers[key] = ["[CLIENT_REDACTED]"]
+      } else {
+        headers[key] = value;
+      }
+    }
+    return headers;
+  }
+
+  private redactFields(body: string, fieldsToRedact: string[]): string {
+    try {
+      const bodyOB = JSON.parse(body)
+      fieldsToRedact.forEach(path => {
+        jsonpath.apply(bodyOB, path, function () { return "[CLIENT_REDACTED]" });
+      })
+      return JSON.stringify(bodyOB)
+    } catch (error) {
+      return ""
+    }
   }
 }
