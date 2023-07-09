@@ -24,7 +24,7 @@ Intialize apitoolkit into your project is as simple as :
 const apitoolkitClient = await APIToolkit.initialize("<API-KEY>")
 
 ```
-where <API-KEY> is the apikey which can be generated from your  [apitoolkit.io](apitoolkit.io) account.
+where ```<API-KEY>``` is the API key which can be generated from your  [apitoolkit.io](apitoolkit.io) account.
 
 Next, you can use the apitoolkit middleware for your respective routing library. 
 
