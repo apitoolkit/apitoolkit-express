@@ -7,6 +7,7 @@ import jsonpath from "jsonpath"
 export type Config = {
   apiKey: string;
   rootURL?: string;
+  debug?: boolean; 
   redactHeaders?: string[];
   redactRequestBody?: string[];
   redactResponseBody?: string[]
@@ -48,19 +49,21 @@ export default class APIToolkit {
   #redactHeaders: string[]
   #redactRequestBody: string[]
   #redactResponseBody: string[]
+  #debug: boolean
 
-  constructor(pubsub: PubSub, topic: string, project_id: string, redactHeaders: string[], redactReqBody: string[], redactRespBody: string[]) {
+  constructor(pubsub: PubSub, topic: string, project_id: string, redactHeaders: string[], redactReqBody: string[], redactRespBody: string[], debug: boolean) {
     this.#topic = topic
     this.#pubsub = pubsub
     this.#project_id = project_id
     this.#redactHeaders = redactHeaders
     this.#redactRequestBody = redactReqBody
     this.#redactResponseBody = redactRespBody
+    this.#debug = debug
 
     this.expressMiddleware = this.expressMiddleware.bind(this)
   }
 
-  static async NewClient({ apiKey, rootURL = "https://app.apitoolkit.io", redactHeaders = [], redactRequestBody = [], redactResponseBody = [] }: Config) {
+  static async NewClient({ apiKey, rootURL = "https://app.apitoolkit.io", redactHeaders = [], redactRequestBody = [], redactResponseBody = [], debug = false }: Config) {
     const resp = await fetch(rootURL + "/api/client_metadata", {
       method: 'GET',
       headers: {
@@ -76,13 +79,21 @@ export default class APIToolkit {
       projectId: pubsub_project_id
     });
 
-    return new APIToolkit(pubsubClient, topic_id, project_id, redactHeaders, redactRequestBody, redactResponseBody);
+    if (debug) { 
+      console.log("apitoolkit:  initialized successfully")
+    }
+
+    return new APIToolkit(pubsubClient, topic_id, project_id, redactHeaders, redactRequestBody, redactResponseBody, debug);
   }
 
   public async expressMiddleware(req: Request, res: Response, next: NextFunction) {
+    if (this.#debug) {
+      console.log("APIToolkit: expressMiddleware called")
+    }
+
     const start_time = hrtime.bigint();
     const chunks: Uint8Array[] = [];
-    let respBody: string = '';
+    let respBody: any = null;
     let reqBody = "";
     req.on('data', function (chunk) { reqBody += chunk })
     req.on('end', function () {
@@ -92,7 +103,7 @@ export default class APIToolkit {
 
     const oldSend = res.send;
     res.send = (val) => {
-      respBody = JSON.stringify(val)
+      respBody = val
       return oldSend.apply(res, [val])
     }
 
@@ -157,6 +168,10 @@ export default class APIToolkit {
         status_code: res.statusCode,
         timestamp: new Date().toISOString(),
         url_path: req.route.path,
+      }
+      if (this.#debug){
+        console.log("APIToolkit: publish prepared payload ")
+        console.dir(payload)
       }
       this.#pubsub.topic(this.#topic).publishMessage({ json: payload })
     }

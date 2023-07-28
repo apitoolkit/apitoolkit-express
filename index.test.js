@@ -30,7 +30,7 @@ describe('testing headers and jsonpath redaction', () => {
         const pubsub = new pubsub_1.PubSub({
             projectId: "pubsub_project_id"
         });
-        myClassInstance = new index_1.default(pubsub, "topic_id", "project_id", [], [], []);
+        myClassInstance = new index_1.default(pubsub, "topic_id", "project_id", [], [], [], true);
     });
     it('should redact headers correctly', () => {
         const headers = { 'Authorization': ["token"], "User-Agent": ["MyApp"], "Content-Type": ["text/json"] };

@@ -21,7 +21,7 @@ describe('testing headers and jsonpath redaction', () => {
     const pubsub = new PubSub({
       projectId: "pubsub_project_id"
     });
-    myClassInstance = new APIToolkit(pubsub, "topic_id", "project_id", [], [], []);
+    myClassInstance = new APIToolkit(pubsub, "topic_id", "project_id", [], [], [], true);
   });
 
   it('should redact headers correctly', () => {
