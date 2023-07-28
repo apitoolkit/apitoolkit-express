@@ -64,6 +64,7 @@ class APIToolkit {
             });
             if (debug) {
                 console.log("apitoolkit:  initialized successfully");
+                console.dir(pubsubClient);
             }
             return new APIToolkit(pubsubClient, topic_id, project_id, redactHeaders, redactRequestBody, redactResponseBody, debug);
         });
