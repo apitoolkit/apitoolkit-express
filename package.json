@@ -9,10 +9,10 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "homepage": "https://github.com/apitoolkit/apitoolkit-js#readme",
+  "homepage": "https://github.com/apitoolkit/apitoolkit-express#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/apitoolkit/apitoolkit-js.git"
+    "url": "https://github.com/apitoolkit/apitoolkit-express.git"
   },
   "devDependencies": {
     "@babel/preset-typescript": "^7.18.6",

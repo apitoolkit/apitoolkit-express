@@ -8,8 +8,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-const index_1 = require("./index");
+const index_1 = __importDefault(require("./index"));
 const pubsub_1 = require("@google-cloud/pubsub");
 describe('testing init', () => {
     test('get correct response', () => __awaiter(void 0, void 0, void 0, function* () {
@@ -27,18 +30,15 @@ describe('testing headers and jsonpath redaction', () => {
         const pubsub = new pubsub_1.PubSub({
             projectId: "pubsub_project_id"
         });
-        myClassInstance = new index_1.APIToolkit(pubsub, "topic_id", "project_id", [], [], []);
+        myClassInstance = new index_1.default(pubsub, "topic_id", "project_id", [], [], []);
     });
     it('should redact headers correctly', () => {
-        const headers = new Map();
-        headers.set('Authorization', ['token']);
-        headers.set('User-Agent', ['MyApp']);
-        headers.set('Content-Type', ['text/json']);
+        const headers = { 'Authorization': ["token"], "User-Agent": ["MyApp"], "Content-Type": ["text/json"] };
         const headersToRedact = ['Authorization', 'content-type'];
         const redactedHeaders = myClassInstance['redactHeaders'](headers, headersToRedact);
-        expect(redactedHeaders.get('Authorization')).toEqual(['[CLIENT_REDACTED]']);
-        expect(redactedHeaders.get('Content-Type')).toEqual(['[CLIENT_REDACTED]']);
-        expect(redactedHeaders.get('User-Agent')).toEqual(['MyApp']);
+        expect(redactedHeaders['Authorization']).toEqual(['[CLIENT_REDACTED]']);
+        expect(redactedHeaders['Content-Type']).toEqual(['[CLIENT_REDACTED]']);
+        expect(redactedHeaders['User-Agent']).toEqual(['MyApp']);
     });
     it('should redact fields correctly', () => {
         const body = '{"user": {"name": "John", "email": "john@example.com", "books": [{"title": "Book 1", "author": "Author 1"},{"title": "Book 2", "author": "Author 2"}]}}';
