@@ -7,7 +7,7 @@ import jsonpath from "jsonpath"
 export type Config = {
   apiKey: string;
   rootURL?: string;
-  debug?: boolean; 
+  debug?: boolean;
   redactHeaders?: string[];
   redactRequestBody?: string[];
   redactResponseBody?: string[]
@@ -79,7 +79,7 @@ export default class APIToolkit {
       projectId: pubsub_project_id
     });
 
-    if (debug) { 
+    if (debug) {
       console.log("apitoolkit:  initialized successfully")
       console.dir(pubsubClient)
     }
@@ -94,13 +94,9 @@ export default class APIToolkit {
 
     const start_time = hrtime.bigint();
     const chunks: Uint8Array[] = [];
-    let respBody: any = null;
+    let respBody: any = '';
     let reqBody = "";
     req.on('data', function (chunk) { reqBody += chunk })
-    req.on('end', function () {
-      // req.rawBody = data;
-      // next();
-    })
 
     const oldSend = res.send;
     res.send = (val) => {
@@ -108,23 +104,20 @@ export default class APIToolkit {
       return oldSend.apply(res, [val])
     }
 
-    // const oldWrite = res.write;
-    // const oldEnd = res.end;
-    // res.write = (chunk, ...args) => {
-    //   console.log("RES.WRITE :", chunk)
-
-    //   chunks.push(chunk);
-    //   // @ts-ignore
-    //   return oldWrite.apply(res, [chunk, ...args]);
-    // };
-
-    // res.end = (chunk: Function | any, encoding?: Function | string, callback?: Function) => {
-    //   if (chunk) chunks.push(chunk);
-    //   respBody = Buffer.concat(chunks).toString('base64');
-    //   // @ts-ignore
-    //   return oldEnd.apply(res, [chunk, encoding, callback]);
-    // };
-
+    const oldWrite = res.write;
+    const oldEnd = res.end;
+    res.write = (chunk, ...args) => {
+      chunks.push(chunk);
+      // @ts-ignore
+      return oldWrite.apply(res, [chunk, ...args]);
+    };
+    res.end = (chunk: Function | any, encoding?: Function | string, callback?: Function) => {
+      if (chunk)
+        chunks.push(chunk);
+      respBody = Buffer.from(chunks.join('')).toString();
+      // @ts-ignore
+      return oldEnd.apply(res, [chunk, encoding, callback]);
+    };
 
     const onRespFinished = (topic: Topic, req: Request, res: Response) => (err: any) => {
       res.removeListener('close', onRespFinished(topic, req, res))
@@ -170,7 +163,7 @@ export default class APIToolkit {
         timestamp: new Date().toISOString(),
         url_path: req.route.path,
       }
-      if (this.#debug){
+      if (this.#debug) {
         console.log("APIToolkit: publish prepared payload ")
         console.dir(payload)
       }
@@ -206,7 +199,7 @@ export default class APIToolkit {
       })
       return JSON.stringify(bodyOB)
     } catch (error) {
-      return ""
+      return body
     }
   }
 }

@@ -76,32 +76,28 @@ class APIToolkit {
             }
             const start_time = node_process_1.hrtime.bigint();
             const chunks = [];
-            let respBody = null;
+            let respBody = '';
             let reqBody = "";
             req.on('data', function (chunk) { reqBody += chunk; });
-            req.on('end', function () {
-                // req.rawBody = data;
-                // next();
-            });
             const oldSend = res.send;
             res.send = (val) => {
                 respBody = val;
                 return oldSend.apply(res, [val]);
             };
-            // const oldWrite = res.write;
-            // const oldEnd = res.end;
-            // res.write = (chunk, ...args) => {
-            //   console.log("RES.WRITE :", chunk)
-            //   chunks.push(chunk);
-            //   // @ts-ignore
-            //   return oldWrite.apply(res, [chunk, ...args]);
-            // };
-            // res.end = (chunk: Function | any, encoding?: Function | string, callback?: Function) => {
-            //   if (chunk) chunks.push(chunk);
-            //   respBody = Buffer.concat(chunks).toString('base64');
-            //   // @ts-ignore
-            //   return oldEnd.apply(res, [chunk, encoding, callback]);
-            // };
+            const oldWrite = res.write;
+            const oldEnd = res.end;
+            res.write = (chunk, ...args) => {
+                chunks.push(chunk);
+                // @ts-ignore
+                return oldWrite.apply(res, [chunk, ...args]);
+            };
+            res.end = (chunk, encoding, callback) => {
+                if (chunk)
+                    chunks.push(chunk);
+                respBody = Buffer.from(chunks.join('')).toString();
+                // @ts-ignore
+                return oldEnd.apply(res, [chunk, encoding, callback]);
+            };
             const onRespFinished = (topic, req, res) => (err) => {
                 var _a, _b;
                 res.removeListener('close', onRespFinished(topic, req, res));
@@ -182,7 +178,7 @@ class APIToolkit {
             return JSON.stringify(bodyOB);
         }
         catch (error) {
-            return "";
+            return body;
         }
     }
 }
