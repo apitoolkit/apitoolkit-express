@@ -18,8 +18,9 @@ npm install apitoolkit-express
 ### Project setup
 
 Intialize apitoolkit into your project is as simple as :
-
+**Note**: Initialize APIToolkit before using any body parser middleware
 ```js
+const APIToolkit = require("apitoolkit-express");
 const apitoolkitClient = await APIToolkit.NewClient({ apiKey: '<API-KEY>' });
 ```
 where ```<API-KEY>``` is the API key which can be generated from your  [apitoolkit.io](apitoolkit.io) accoun
@@ -38,6 +39,7 @@ Your final could might look something like this:
 
 ```js
 const express = require('express');
+const APIToolkit = require("apitoolkit-express");
 const app = express();
 const port = 3000;
 
@@ -61,6 +63,7 @@ To mark fields that should be redacted, simply add them to the apitoolkit config
 
 ```js
 const express = require('express');
+const APIToolkit = require("apitoolkit-express");
 const app = express();
 const port = 3000;
 
