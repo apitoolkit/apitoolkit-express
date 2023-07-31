@@ -97,6 +97,10 @@ export default class APIToolkit {
     let respBody: any = null;
     let reqBody = "";
     req.on('data', function (chunk) { reqBody += chunk })
+    req.on('end', function () {
+        // req.rawBody = data;
+        // next();
+    });
 
     const oldSend = res.send;
     res.send = (val) => {
@@ -169,6 +173,7 @@ export default class APIToolkit {
     const onRespFinishedCB = onRespFinished(this.#pubsub.topic(this.#topic), req, res)
     res.on('finish', onRespFinishedCB)
     res.on('error', onRespFinishedCB)
+    // res.on('close', onRespFinishedCB)
 
     next()
   }
