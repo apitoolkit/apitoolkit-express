@@ -1,7 +1,6 @@
 import fetch from 'node-fetch';
 import { PubSub, Topic } from '@google-cloud/pubsub';
 import { NextFunction, Request, Response } from 'express';
-import { hrtime } from 'node:process';
 import jsonpath from "jsonpath"
 
 export type Config = {
@@ -93,7 +92,7 @@ export default class APIToolkit {
       console.log("APIToolkit: expressMiddleware called")
     }
 
-    const start_time = hrtime.bigint();
+    const start_time = process.hrtime.bigint();
     let respBody: any = null;
     let reqBody = "";
     req.on('data', function (chunk) { reqBody += chunk })
@@ -119,7 +118,7 @@ export default class APIToolkit {
 
       const resObjEntries: Array<[string, string[]]> = Object.entries(res.getHeaders())
                   .map(([k, v]:[string, any]):[string, string[]] => [k, Array.isArray(v) ? v : [v]]);
-      const resHeaders = new Map<string, string[]>(reqObjEntries)
+      const resHeaders = new Map<string, string[]>(resObjEntries)
 
       const queryObjEntries = Object.entries(req.query).map(([k, v]) => {
         if (typeof v === "string") return [k, [v]]
@@ -129,7 +128,7 @@ export default class APIToolkit {
       const pathParams = req.params ?? {}
 
       const payload: Payload = {
-        duration: Number(hrtime.bigint() - start_time),
+        duration: Number(process.hrtime.bigint() - start_time),
         host: req.hostname,
         method: req.method,
         path_params: pathParams,

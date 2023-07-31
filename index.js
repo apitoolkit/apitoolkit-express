@@ -26,7 +26,6 @@ var _APIToolkit_topic, _APIToolkit_pubsub, _APIToolkit_project_id, _APIToolkit_r
 Object.defineProperty(exports, "__esModule", { value: true });
 const node_fetch_1 = __importDefault(require("node-fetch"));
 const pubsub_1 = require("@google-cloud/pubsub");
-const node_process_1 = require("node:process");
 const jsonpath_1 = __importDefault(require("jsonpath"));
 class APIToolkit {
     constructor(pubsub, topic, project_id, redactHeaders, redactReqBody, redactRespBody, debug) {
@@ -75,7 +74,7 @@ class APIToolkit {
             if (__classPrivateFieldGet(this, _APIToolkit_debug, "f")) {
                 console.log("APIToolkit: expressMiddleware called");
             }
-            const start_time = node_process_1.hrtime.bigint();
+            const start_time = process.hrtime.bigint();
             let respBody = null;
             let reqBody = "";
             req.on('data', function (chunk) { reqBody += chunk; });
@@ -98,7 +97,7 @@ class APIToolkit {
                 const reqHeaders = new Map(reqObjEntries);
                 const resObjEntries = Object.entries(res.getHeaders())
                     .map(([k, v]) => [k, Array.isArray(v) ? v : [v]]);
-                const resHeaders = new Map(reqObjEntries);
+                const resHeaders = new Map(resObjEntries);
                 const queryObjEntries = Object.entries(req.query).map(([k, v]) => {
                     if (typeof v === "string")
                         return [k, [v]];
@@ -107,7 +106,7 @@ class APIToolkit {
                 const queryParams = Object.fromEntries(queryObjEntries);
                 const pathParams = (_a = req.params) !== null && _a !== void 0 ? _a : {};
                 const payload = {
-                    duration: Number(node_process_1.hrtime.bigint() - start_time),
+                    duration: Number(process.hrtime.bigint() - start_time),
                     host: req.hostname,
                     method: req.method,
                     path_params: pathParams,
