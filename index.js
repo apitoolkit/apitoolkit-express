@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __classPrivateFieldSet = (this && this.__classPrivateFieldSet) || function (receiver, state, value, kind, f) {
     if (kind === "m") throw new TypeError("Private method is not writable");
     if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
@@ -45,107 +36,102 @@ class APIToolkit {
         __classPrivateFieldSet(this, _APIToolkit_debug, debug, "f");
         this.expressMiddleware = this.expressMiddleware.bind(this);
     }
-    static NewClient({ apiKey, rootURL = "https://app.apitoolkit.io", redactHeaders = [], redactRequestBody = [], redactResponseBody = [], debug = false }) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const resp = yield (0, node_fetch_1.default)(rootURL + "/api/client_metadata", {
-                method: 'GET',
-                headers: {
-                    Authorization: "Bearer " + apiKey,
-                    Accept: 'application/json',
-                },
-            });
-            if (!resp.ok)
-                throw new Error(`Error getting apitoolkit client_metadata ${resp.status}`);
-            const clientMetadata = yield resp.json();
-            const { pubsub_project_id, topic_id, project_id, pubsub_push_service_account } = clientMetadata;
-            const pubsubClient = new pubsub_1.PubSub({
-                projectId: pubsub_project_id,
-                authClient: (new pubsub_1.PubSub()).auth.fromJSON(pubsub_push_service_account),
-            });
-            if (debug) {
-                console.log("apitoolkit:  initialized successfully");
-                console.dir(pubsubClient);
-            }
-            return new APIToolkit(pubsubClient, topic_id, project_id, redactHeaders, redactRequestBody, redactResponseBody, debug);
+    static async NewClient({ apiKey, rootURL = "https://app.apitoolkit.io", redactHeaders = [], redactRequestBody = [], redactResponseBody = [], debug = false }) {
+        const resp = await (0, node_fetch_1.default)(rootURL + "/api/client_metadata", {
+            method: 'GET',
+            headers: {
+                Authorization: "Bearer " + apiKey,
+                Accept: 'application/json',
+            },
         });
+        if (!resp.ok)
+            throw new Error(`Error getting apitoolkit client_metadata ${resp.status}`);
+        const clientMetadata = await resp.json();
+        const { pubsub_project_id, topic_id, project_id, pubsub_push_service_account } = clientMetadata;
+        const pubsubClient = new pubsub_1.PubSub({
+            projectId: pubsub_project_id,
+            authClient: (new pubsub_1.PubSub()).auth.fromJSON(pubsub_push_service_account),
+        });
+        if (debug) {
+            console.log("apitoolkit:  initialized successfully");
+            console.dir(pubsubClient);
+        }
+        return new APIToolkit(pubsubClient, topic_id, project_id, redactHeaders, redactRequestBody, redactResponseBody, debug);
     }
-    expressMiddleware(req, res, next) {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (__classPrivateFieldGet(this, _APIToolkit_debug, "f")) {
-                console.log("APIToolkit: expressMiddleware called");
-            }
-            const start_time = process.hrtime.bigint();
-            let respBody = null;
-            let reqBody = "";
-            req.on('data', function (chunk) { reqBody += chunk; });
-            req.on('end', function () {
-                // req.rawBody = data;
-                // next();
-            });
-            const oldSend = res.send;
-            res.send = (val) => {
-                respBody = val;
-                return oldSend.apply(res, [val]);
-            };
-            const onRespFinished = (topic, req, res) => (err) => {
-                var _a, _b, _c, _d;
-                res.removeListener('close', onRespFinished(topic, req, res));
-                res.removeListener('error', onRespFinished(topic, req, res));
-                res.removeListener('finish', onRespFinished(topic, req, res));
-                const reqObjEntries = Object.entries(req.headers)
-                    .map(([k, v]) => [k, Array.isArray(v) ? v : [v]]);
-                const reqHeaders = new Map(reqObjEntries);
-                const resObjEntries = Object.entries(res.getHeaders())
-                    .map(([k, v]) => [k, Array.isArray(v) ? v : [v]]);
-                const resHeaders = new Map(resObjEntries);
-                const queryObjEntries = Object.entries(req.query).map(([k, v]) => {
-                    if (typeof v === "string")
-                        return [k, [v]];
-                    return [k, v];
-                });
-                const queryParams = Object.fromEntries(queryObjEntries);
-                const pathParams = (_a = req.params) !== null && _a !== void 0 ? _a : {};
-                const payload = {
-                    duration: Number(process.hrtime.bigint() - start_time),
-                    host: req.hostname,
-                    method: req.method,
-                    path_params: pathParams,
-                    project_id: __classPrivateFieldGet(this, _APIToolkit_project_id, "f"),
-                    proto_minor: 1,
-                    proto_major: 1,
-                    query_params: queryParams,
-                    raw_url: req.url,
-                    referer: (_b = req.headers.referer) !== null && _b !== void 0 ? _b : '',
-                    request_body: Buffer.from(this.redactFields(reqBody, __classPrivateFieldGet(this, _APIToolkit_redactRequestBody, "f"))).toString('base64'),
-                    request_headers: this.redactHeaders(reqHeaders, __classPrivateFieldGet(this, _APIToolkit_redactHeaders, "f")),
-                    response_body: Buffer.from(this.redactFields(respBody, __classPrivateFieldGet(this, _APIToolkit_redactResponseBody, "f"))).toString('base64'),
-                    response_headers: this.redactHeaders(resHeaders, __classPrivateFieldGet(this, _APIToolkit_redactHeaders, "f")),
-                    sdk_type: "JsExpress",
-                    status_code: res.statusCode,
-                    timestamp: new Date().toISOString(),
-                    url_path: (_d = (_c = req.route) === null || _c === void 0 ? void 0 : _c.path) !== null && _d !== void 0 ? _d : req.originalUrl,
-                };
-                if (__classPrivateFieldGet(this, _APIToolkit_debug, "f")) {
-                    console.log("APIToolkit: publish prepared payload ");
-                    console.dir(payload);
-                }
-                const callback = (err, messageId) => {
-                    if (__classPrivateFieldGet(this, _APIToolkit_debug, "f")) {
-                        console.log("APIToolkit: pubsub publish callback called; messageId: ", messageId, " error ", err);
-                        if (err) {
-                            console.log("APIToolkit: error publishing message to pubsub");
-                            console.error(err);
-                        }
-                    }
-                };
-                __classPrivateFieldGet(this, _APIToolkit_pubsub, "f").topic(__classPrivateFieldGet(this, _APIToolkit_topic, "f")).publishMessage({ json: payload }, callback);
-            };
-            const onRespFinishedCB = onRespFinished(__classPrivateFieldGet(this, _APIToolkit_pubsub, "f").topic(__classPrivateFieldGet(this, _APIToolkit_topic, "f")), req, res);
-            res.on('finish', onRespFinishedCB);
-            res.on('error', onRespFinishedCB);
-            // res.on('close', onRespFinishedCB)
-            next();
+    async expressMiddleware(req, res, next) {
+        if (__classPrivateFieldGet(this, _APIToolkit_debug, "f")) {
+            console.log("APIToolkit: expressMiddleware called");
+        }
+        const start_time = process.hrtime.bigint();
+        let respBody = null;
+        let reqBody = "";
+        req.on('data', function (chunk) { reqBody += chunk; });
+        req.on('end', function () {
+            // req.rawBody = data;
+            // next();
         });
+        const oldSend = res.send;
+        res.send = (val) => {
+            respBody = val;
+            return oldSend.apply(res, [val]);
+        };
+        const onRespFinished = (topic, req, res) => (err) => {
+            res.removeListener('close', onRespFinished(topic, req, res));
+            res.removeListener('error', onRespFinished(topic, req, res));
+            res.removeListener('finish', onRespFinished(topic, req, res));
+            const reqObjEntries = Object.entries(req.headers)
+                .map(([k, v]) => [k, Array.isArray(v) ? v : [v]]);
+            const reqHeaders = new Map(reqObjEntries);
+            const resObjEntries = Object.entries(res.getHeaders())
+                .map(([k, v]) => [k, Array.isArray(v) ? v : [v]]);
+            const resHeaders = new Map(resObjEntries);
+            const queryObjEntries = Object.entries(req.query).map(([k, v]) => {
+                if (typeof v === "string")
+                    return [k, [v]];
+                return [k, v];
+            });
+            const queryParams = Object.fromEntries(queryObjEntries);
+            const pathParams = req.params ?? {};
+            const payload = {
+                duration: Number(process.hrtime.bigint() - start_time),
+                host: req.hostname,
+                method: req.method,
+                path_params: pathParams,
+                project_id: __classPrivateFieldGet(this, _APIToolkit_project_id, "f"),
+                proto_minor: 1,
+                proto_major: 1,
+                query_params: queryParams,
+                raw_url: req.url,
+                referer: req.headers.referer ?? '',
+                request_body: Buffer.from(this.redactFields(reqBody, __classPrivateFieldGet(this, _APIToolkit_redactRequestBody, "f"))).toString('base64'),
+                request_headers: this.redactHeaders(reqHeaders, __classPrivateFieldGet(this, _APIToolkit_redactHeaders, "f")),
+                response_body: Buffer.from(this.redactFields(respBody, __classPrivateFieldGet(this, _APIToolkit_redactResponseBody, "f"))).toString('base64'),
+                response_headers: this.redactHeaders(resHeaders, __classPrivateFieldGet(this, _APIToolkit_redactHeaders, "f")),
+                sdk_type: "JsExpress",
+                status_code: res.statusCode,
+                timestamp: new Date().toISOString(),
+                url_path: req.route?.path ?? req.originalUrl,
+            };
+            if (__classPrivateFieldGet(this, _APIToolkit_debug, "f")) {
+                console.log("APIToolkit: publish prepared payload ");
+                console.dir(payload);
+            }
+            const callback = (err, messageId) => {
+                if (__classPrivateFieldGet(this, _APIToolkit_debug, "f")) {
+                    console.log("APIToolkit: pubsub publish callback called; messageId: ", messageId, " error ", err);
+                    if (err) {
+                        console.log("APIToolkit: error publishing message to pubsub");
+                        console.error(err);
+                    }
+                }
+            };
+            __classPrivateFieldGet(this, _APIToolkit_pubsub, "f").topic(__classPrivateFieldGet(this, _APIToolkit_topic, "f")).publishMessage({ json: payload }, callback);
+        };
+        const onRespFinishedCB = onRespFinished(__classPrivateFieldGet(this, _APIToolkit_pubsub, "f").topic(__classPrivateFieldGet(this, _APIToolkit_topic, "f")), req, res);
+        res.on('finish', onRespFinishedCB);
+        res.on('error', onRespFinishedCB);
+        // res.on('close', onRespFinishedCB)
+        next();
     }
     redactHeaders(headers, headersToRedact) {
         const redactedHeaders = new Map();
