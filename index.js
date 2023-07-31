@@ -93,18 +93,12 @@ class APIToolkit {
                 res.removeListener('close', onRespFinished(topic, req, res));
                 res.removeListener('error', onRespFinished(topic, req, res));
                 res.removeListener('finish', onRespFinished(topic, req, res));
-                const reqObjEntries = Object.entries(req.headers).map(([k, v]) => {
-                    if (typeof v === "string")
-                        return [k, [v]];
-                    return [k, v];
-                });
-                const reqHeaders = Object.fromEntries(reqObjEntries);
-                const resObjEntries = Object.entries(res.getHeaders()).map(([k, v]) => {
-                    if (typeof v === "string")
-                        return [k, [v]];
-                    return [k, v];
-                });
-                const resHeaders = Object.fromEntries(resObjEntries);
+                const reqObjEntries = Object.entries(req.headers)
+                    .map(([k, v]) => [k, Array.isArray(v) ? v : [v]]);
+                const reqHeaders = new Map(reqObjEntries);
+                const resObjEntries = Object.entries(res.getHeaders())
+                    .map(([k, v]) => [k, Array.isArray(v) ? v : [v]]);
+                const resHeaders = new Map(reqObjEntries);
                 const queryObjEntries = Object.entries(req.query).map(([k, v]) => {
                     if (typeof v === "string")
                         return [k, [v]];
@@ -155,18 +149,14 @@ class APIToolkit {
         });
     }
     redactHeaders(headers, headersToRedact) {
-        for (const [key, value] of Object.entries(headers)) {
-            if (headersToRedact.some(header => header.includes(key) || header.includes(key.toLocaleLowerCase()))) {
-                headers[key] = ["[CLIENT_REDACTED]"];
-            }
-            else if (key === "Cookie" || key === "cookie") {
-                headers[key] = ["[CLIENT_REDACTED]"];
-            }
-            else {
-                headers[key] = value;
-            }
+        const redactedHeaders = new Map();
+        const headersToRedactLowerCase = headersToRedact.map(header => header.toLowerCase());
+        for (let [key, value] of headers) {
+            const lowerKey = key.toLowerCase();
+            const isRedactKey = headersToRedactLowerCase.includes(lowerKey) || lowerKey === "cookie";
+            redactedHeaders.set(key, isRedactKey ? ["[CLIENT_REDACTED]"] : value);
         }
-        return headers;
+        return redactedHeaders;
     }
     redactFields(body, fieldsToRedact) {
         try {
