@@ -79,13 +79,17 @@ class APIToolkit {
             let respBody = null;
             let reqBody = "";
             req.on('data', function (chunk) { reqBody += chunk; });
+            req.on('end', function () {
+                // req.rawBody = data;
+                // next();
+            });
             const oldSend = res.send;
             res.send = (val) => {
                 respBody = val;
                 return oldSend.apply(res, [val]);
             };
             const onRespFinished = (topic, req, res) => (err) => {
-                var _a, _b;
+                var _a, _b, _c, _d;
                 res.removeListener('close', onRespFinished(topic, req, res));
                 res.removeListener('error', onRespFinished(topic, req, res));
                 res.removeListener('finish', onRespFinished(topic, req, res));
@@ -126,7 +130,7 @@ class APIToolkit {
                     sdk_type: "JsExpress",
                     status_code: res.statusCode,
                     timestamp: new Date().toISOString(),
-                    url_path: req.route.path,
+                    url_path: (_d = (_c = req.route) === null || _c === void 0 ? void 0 : _c.path) !== null && _d !== void 0 ? _d : req.originalUrl,
                 };
                 if (__classPrivateFieldGet(this, _APIToolkit_debug, "f")) {
                     console.log("APIToolkit: publish prepared payload ");
@@ -146,6 +150,7 @@ class APIToolkit {
             const onRespFinishedCB = onRespFinished(__classPrivateFieldGet(this, _APIToolkit_pubsub, "f").topic(__classPrivateFieldGet(this, _APIToolkit_topic, "f")), req, res);
             res.on('finish', onRespFinishedCB);
             res.on('error', onRespFinishedCB);
+            // res.on('close', onRespFinishedCB)
             next();
         });
     }
