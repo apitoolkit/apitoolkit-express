@@ -74,9 +74,10 @@ export default class APIToolkit {
     if (!resp.ok) throw new Error(`Error getting apitoolkit client_metadata ${resp.status}`);
 
     const clientMetadata: ClientMetadata = await resp.json();
-    const { pubsub_project_id, topic_id, project_id } = clientMetadata;
+    const { pubsub_project_id, topic_id, project_id, pubsub_push_service_account } = clientMetadata;
     const pubsubClient = new PubSub({
-      projectId: pubsub_project_id
+      projectId: pubsub_project_id,
+      authClient: (new PubSub()).auth.fromJSON(pubsub_push_service_account),
     });
 
     if (debug) { 
@@ -93,38 +94,15 @@ export default class APIToolkit {
     }
 
     const start_time = hrtime.bigint();
-    const chunks: Uint8Array[] = [];
     let respBody: any = null;
     let reqBody = "";
     req.on('data', function (chunk) { reqBody += chunk })
-    req.on('end', function () {
-      // req.rawBody = data;
-      // next();
-    })
 
     const oldSend = res.send;
     res.send = (val) => {
       respBody = val
       return oldSend.apply(res, [val])
     }
-
-    // const oldWrite = res.write;
-    // const oldEnd = res.end;
-    // res.write = (chunk, ...args) => {
-    //   console.log("RES.WRITE :", chunk)
-
-    //   chunks.push(chunk);
-    //   // @ts-ignore
-    //   return oldWrite.apply(res, [chunk, ...args]);
-    // };
-
-    // res.end = (chunk: Function | any, encoding?: Function | string, callback?: Function) => {
-    //   if (chunk) chunks.push(chunk);
-    //   respBody = Buffer.concat(chunks).toString('base64');
-    //   // @ts-ignore
-    //   return oldEnd.apply(res, [chunk, encoding, callback]);
-    // };
-
 
     const onRespFinished = (topic: Topic, req: Request, res: Response) => (err: any) => {
       res.removeListener('close', onRespFinished(topic, req, res))
@@ -174,11 +152,21 @@ export default class APIToolkit {
         console.log("APIToolkit: publish prepared payload ")
         console.dir(payload)
       }
-      this.#pubsub.topic(this.#topic).publishMessage({ json: payload })
+
+      const callback = (err:any, messageId:any) => {
+          if (this.#debug) {
+            console.log("APIToolkit: pubsub publish callback called; messageId: ", messageId, " error ", err)
+            if (err) {
+              console.log("APIToolkit: error publishing message to pubsub")
+              console.error(err)
+            }
+          }
+      };
+
+      this.#pubsub.topic(this.#topic).publishMessage({ json: payload }, callback)
     }
 
     const onRespFinishedCB = onRespFinished(this.#pubsub.topic(this.#topic), req, res)
-    // res.on('close', onRespFinishedCB)
     res.on('finish', onRespFinishedCB)
     res.on('error', onRespFinishedCB)
 

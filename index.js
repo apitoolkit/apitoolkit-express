@@ -58,9 +58,10 @@ class APIToolkit {
             if (!resp.ok)
                 throw new Error(`Error getting apitoolkit client_metadata ${resp.status}`);
             const clientMetadata = yield resp.json();
-            const { pubsub_project_id, topic_id, project_id } = clientMetadata;
+            const { pubsub_project_id, topic_id, project_id, pubsub_push_service_account } = clientMetadata;
             const pubsubClient = new pubsub_1.PubSub({
-                projectId: pubsub_project_id
+                projectId: pubsub_project_id,
+                authClient: (new pubsub_1.PubSub()).auth.fromJSON(pubsub_push_service_account),
             });
             if (debug) {
                 console.log("apitoolkit:  initialized successfully");
@@ -75,33 +76,14 @@ class APIToolkit {
                 console.log("APIToolkit: expressMiddleware called");
             }
             const start_time = node_process_1.hrtime.bigint();
-            const chunks = [];
             let respBody = null;
             let reqBody = "";
             req.on('data', function (chunk) { reqBody += chunk; });
-            req.on('end', function () {
-                // req.rawBody = data;
-                // next();
-            });
             const oldSend = res.send;
             res.send = (val) => {
                 respBody = val;
                 return oldSend.apply(res, [val]);
             };
-            // const oldWrite = res.write;
-            // const oldEnd = res.end;
-            // res.write = (chunk, ...args) => {
-            //   console.log("RES.WRITE :", chunk)
-            //   chunks.push(chunk);
-            //   // @ts-ignore
-            //   return oldWrite.apply(res, [chunk, ...args]);
-            // };
-            // res.end = (chunk: Function | any, encoding?: Function | string, callback?: Function) => {
-            //   if (chunk) chunks.push(chunk);
-            //   respBody = Buffer.concat(chunks).toString('base64');
-            //   // @ts-ignore
-            //   return oldEnd.apply(res, [chunk, encoding, callback]);
-            // };
             const onRespFinished = (topic, req, res) => (err) => {
                 var _a, _b;
                 res.removeListener('close', onRespFinished(topic, req, res));
@@ -150,10 +132,18 @@ class APIToolkit {
                     console.log("APIToolkit: publish prepared payload ");
                     console.dir(payload);
                 }
-                __classPrivateFieldGet(this, _APIToolkit_pubsub, "f").topic(__classPrivateFieldGet(this, _APIToolkit_topic, "f")).publishMessage({ json: payload });
+                const callback = (err, messageId) => {
+                    if (__classPrivateFieldGet(this, _APIToolkit_debug, "f")) {
+                        console.log("APIToolkit: pubsub publish callback called; messageId: ", messageId, " error ", err);
+                        if (err) {
+                            console.log("APIToolkit: error publishing message to pubsub");
+                            console.error(err);
+                        }
+                    }
+                };
+                __classPrivateFieldGet(this, _APIToolkit_pubsub, "f").topic(__classPrivateFieldGet(this, _APIToolkit_topic, "f")).publishMessage({ json: payload }, callback);
             };
             const onRespFinishedCB = onRespFinished(__classPrivateFieldGet(this, _APIToolkit_pubsub, "f").topic(__classPrivateFieldGet(this, _APIToolkit_topic, "f")), req, res);
-            // res.on('close', onRespFinishedCB)
             res.on('finish', onRespFinishedCB);
             res.on('error', onRespFinishedCB);
             next();
