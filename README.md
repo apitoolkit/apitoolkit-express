@@ -20,6 +20,8 @@ npm install apitoolkit-express
 Intialize apitoolkit into your project is as simple as :
 
 ```js
+import APIToolkit from "apitoolkit-express";
+
 const apitoolkitClient = await APIToolkit.NewClient({ apiKey: '<API-KEY>' });
 ```
 where ```<API-KEY>``` is the API key which can be generated from your  [apitoolkit.io](apitoolkit.io) accoun
@@ -37,12 +39,12 @@ where app is your express js instance.
 Your final could might look something like this:
 
 ```js
-const express = require('express');
-const app = express();
-const port = 3000;
+import APIToolkit from "apitoolkit-express";
+import express from "express";
 
-const apitoolkitClient = await APIToolkit.NewClient({ apiKey: '<API-KEY>' });
-app.use(apitoolkitClient.expressMiddleware);
+const port = 3000;
+const apitoolkit = await APIToolkit.NewClient({ apiKey: '<API-KEY>' });
+app.use(apitoolkit.expressMiddleware);
 
 app.get('/', (req, res) => {
   res.send('Hello World!');
@@ -51,6 +53,26 @@ app.get('/', (req, res) => {
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
 });
+```
+
+If you're unable to use await at the top level, then you could wrap your apitoolkit and express initialization logic in a closure.
+```js
+import APIToolkit from "apitoolkit-express";
+import express from "express";
+
+(async function(){
+    const port = 3000;
+    const apitoolkit = await APIToolkit.NewClient({ apiKey: '<API-KEY>' });
+    app.use(apitoolkit.expressMiddleware);
+
+    app.get('/', (req, res) => {
+      res.send('Hello World!');
+    });
+
+    app.listen(port, () => {
+      console.log(`Example app listening on port ${port}`);
+    });
+})();
 ```
 
 ## Redacting Senstive Fields and Headers
