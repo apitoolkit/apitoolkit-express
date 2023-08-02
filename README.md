@@ -36,7 +36,7 @@ app.use(apitoolkitClient.expressMiddleware);
 
 where app is your express js instance.
 
-Your final could might look something like this:
+Your final could might look something like this especially on typescript:
 
 ```js
 import APIToolkit from "apitoolkit-express";
@@ -56,9 +56,10 @@ app.listen(port, () => {
 ```
 
 If you're unable to use await at the top level, then you could wrap your apitoolkit and express initialization logic in a closure.
+Also notice the `.default` at the end of the require, to access the default export of the SDK.
 ```js
-import APIToolkit from "apitoolkit-express";
-import express from "express";
+const APIToolkit = require("apitoolkit-express").default;
+const express = require("express");
 
 (async function(){
     const port = 3000;
@@ -82,25 +83,28 @@ While it's possible to mark a field as redacted from the apitoolkit dashboard, t
 To mark fields that should be redacted, simply add them to the apitoolkit config object. Eg:
 
 ```js
+const APIToolkit = require('apitoolkit-express').default;
 const express = require('express');
-const app = express();
-const port = 3000;
 
-const apitoolkitClient = await APIToolkit.NewClient({
-  apiKey: '<API-KEY>',
-  redactHeaders: ['Content-Type', 'Authorization', 'Cookies'], // Specified headers will be redacted
-  redactRequestBody: ['$.credit-card.cvv', '$.credit-card.name'], // Specified request bodies fields will be redacted
-  redactResponseBody: ['$.message.error'], // Specified response body fields will be redacted
-});
-app.use(apitoolkitClient.expressMiddleware);
+(async function(){
+    const app = express();
+    const port = 3000;
+    const apitoolkitClient = await APIToolkit.NewClient({
+      apiKey: '<API-KEY>',
+      redactHeaders: ['Content-Type', 'Authorization', 'Cookies'], // Specified headers will be redacted
+      redactRequestBody: ['$.credit-card.cvv', '$.credit-card.name'], // Specified request bodies fields will be redacted
+      redactResponseBody: ['$.message.error'], // Specified response body fields will be redacted
+    });
+    app.use(apitoolkitClient.expressMiddleware);
 
-app.get('/', (req, res) => {
-  res.send('Hello World!');
-});
+    app.get('/', (req, res) => {
+      res.send('Hello World!');
+    });
 
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
-});
+    app.listen(port, () => {
+      console.log(`Example app listening on port ${port}`);
+    });
+}()
 ```
 
 It is important to note that while the `redactHeaders` config field accepts a list of headers(case insensitive), the `redactRequestBody` and `redactResponseBody` expect a list of JSONPath strings as arguments.
