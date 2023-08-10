@@ -6,7 +6,7 @@ import jsonpath from "jsonpath"
 export type Config = {
   apiKey: string;
   rootURL?: string;
-  debug?: boolean; 
+  debug?: boolean;
   redactHeaders?: string[];
   redactRequestBody?: string[];
   redactResponseBody?: string[]
@@ -19,7 +19,7 @@ type ClientMetadata = {
   pubsub_push_service_account: any,
 }
 
-type Payload = {
+export type Payload = {
   duration: number
   host: string
   method: string
@@ -31,9 +31,9 @@ type Payload = {
   raw_url: string
   referer: string
   request_body: string
-  request_headers: Map<string, string[] >
+  request_headers: Map<string, string[]>
   response_body: string
-  response_headers:Map<string, string[] >
+  response_headers: Map<string, string[]>
   sdk_type: string
   status_code: number
   timestamp: string
@@ -49,7 +49,7 @@ export default class APIToolkit {
   #redactRequestBody: string[]
   #redactResponseBody: string[]
   #debug: boolean
-
+  publishMessage: (payload: Payload) => void
   constructor(pubsub: PubSub, topic: string, project_id: string, redactHeaders: string[], redactReqBody: string[], redactRespBody: string[], debug: boolean) {
     this.#topic = topic
     this.#pubsub = pubsub
@@ -58,7 +58,19 @@ export default class APIToolkit {
     this.#redactRequestBody = redactReqBody
     this.#redactResponseBody = redactRespBody
     this.#debug = debug
-
+    this.publishMessage = (payload: Payload) => {
+      console.log("original")
+      const callback = (err: any, messageId: any) => {
+        if (this.#debug) {
+          console.log("APIToolkit: pubsub publish callback called; messageId: ", messageId, " error ", err)
+          if (err) {
+            console.log("APIToolkit: error publishing message to pubsub")
+            console.error(err)
+          }
+        }
+      };
+      this.#pubsub.topic(this.#topic).publishMessage({ json: payload }, callback)
+    }
     this.expressMiddleware = this.expressMiddleware.bind(this)
   }
 
@@ -79,7 +91,7 @@ export default class APIToolkit {
       authClient: (new PubSub()).auth.fromJSON(pubsub_push_service_account),
     });
 
-    if (debug) { 
+    if (debug) {
       console.log("apitoolkit:  initialized successfully")
       console.dir(pubsubClient)
     }
@@ -97,8 +109,8 @@ export default class APIToolkit {
     let reqBody = "";
     req.on('data', function (chunk) { reqBody += chunk })
     req.on('end', function () {
-        // req.rawBody = data;
-        // next();
+      // req.rawBody = data;
+      // next();
     });
 
     const oldSend = res.send;
@@ -113,11 +125,11 @@ export default class APIToolkit {
       res.removeListener('finish', onRespFinished(topic, req, res))
 
       const reqObjEntries: Array<[string, string[]]> = Object.entries(req.headers)
-                  .map(([k, v]:[string, any]):[string, string[]] => [k, Array.isArray(v) ? v : [v]]);
+        .map(([k, v]: [string, any]): [string, string[]] => [k, Array.isArray(v) ? v : [v]]);
       const reqHeaders = new Map<string, string[]>(reqObjEntries)
 
       const resObjEntries: Array<[string, string[]]> = Object.entries(res.getHeaders())
-                  .map(([k, v]:[string, any]):[string, string[]] => [k, Array.isArray(v) ? v : [v]]);
+        .map(([k, v]: [string, any]): [string, string[]] => [k, Array.isArray(v) ? v : [v]]);
       const resHeaders = new Map<string, string[]>(resObjEntries)
 
       const queryObjEntries = Object.entries(req.query).map(([k, v]) => {
@@ -147,22 +159,11 @@ export default class APIToolkit {
         timestamp: new Date().toISOString(),
         url_path: req.route?.path ?? req.originalUrl,
       }
-      if (this.#debug){
+      if (this.#debug) {
         console.log("APIToolkit: publish prepared payload ")
         console.dir(payload)
       }
-
-      const callback = (err:any, messageId:any) => {
-          if (this.#debug) {
-            console.log("APIToolkit: pubsub publish callback called; messageId: ", messageId, " error ", err)
-            if (err) {
-              console.log("APIToolkit: error publishing message to pubsub")
-              console.error(err)
-            }
-          }
-      };
-
-      this.#pubsub.topic(this.#topic).publishMessage({ json: payload }, callback)
+      this.publishMessage(payload)
     }
 
     const onRespFinishedCB = onRespFinished(this.#pubsub.topic(this.#topic), req, res)
@@ -173,18 +174,18 @@ export default class APIToolkit {
     next()
   }
 
-private redactHeaders(headers:  Map<string, string[]>, headersToRedact: string[]) {
-  const redactedHeaders:  Map<string, string[]> = new Map();
-  const headersToRedactLowerCase = headersToRedact.map(header => header.toLowerCase());
+  private redactHeaders(headers: Map<string, string[]>, headersToRedact: string[]) {
+    const redactedHeaders: Map<string, string[]> = new Map();
+    const headersToRedactLowerCase = headersToRedact.map(header => header.toLowerCase());
 
-  for (let [key, value] of headers) {
-    const lowerKey = key.toLowerCase();
-    const isRedactKey = headersToRedactLowerCase.includes(lowerKey) || lowerKey === "cookie";
-    redactedHeaders.set(key, isRedactKey ? ["[CLIENT_REDACTED]"] : value);
+    for (let [key, value] of headers) {
+      const lowerKey = key.toLowerCase();
+      const isRedactKey = headersToRedactLowerCase.includes(lowerKey) || lowerKey === "cookie";
+      redactedHeaders.set(key, isRedactKey ? ["[CLIENT_REDACTED]"] : value);
+    }
+
+    return redactedHeaders;
   }
-
-  return redactedHeaders;
-}
 
   private redactFields(body: string, fieldsToRedact: string[]): string {
     try {

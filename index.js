@@ -34,6 +34,19 @@ class APIToolkit {
         __classPrivateFieldSet(this, _APIToolkit_redactRequestBody, redactReqBody, "f");
         __classPrivateFieldSet(this, _APIToolkit_redactResponseBody, redactRespBody, "f");
         __classPrivateFieldSet(this, _APIToolkit_debug, debug, "f");
+        this.publishMessage = (payload) => {
+            console.log("original");
+            const callback = (err, messageId) => {
+                if (__classPrivateFieldGet(this, _APIToolkit_debug, "f")) {
+                    console.log("APIToolkit: pubsub publish callback called; messageId: ", messageId, " error ", err);
+                    if (err) {
+                        console.log("APIToolkit: error publishing message to pubsub");
+                        console.error(err);
+                    }
+                }
+            };
+            __classPrivateFieldGet(this, _APIToolkit_pubsub, "f").topic(__classPrivateFieldGet(this, _APIToolkit_topic, "f")).publishMessage({ json: payload }, callback);
+        };
         this.expressMiddleware = this.expressMiddleware.bind(this);
     }
     static async NewClient({ apiKey, rootURL = "https://app.apitoolkit.io", redactHeaders = [], redactRequestBody = [], redactResponseBody = [], debug = false }) {
@@ -116,16 +129,7 @@ class APIToolkit {
                 console.log("APIToolkit: publish prepared payload ");
                 console.dir(payload);
             }
-            const callback = (err, messageId) => {
-                if (__classPrivateFieldGet(this, _APIToolkit_debug, "f")) {
-                    console.log("APIToolkit: pubsub publish callback called; messageId: ", messageId, " error ", err);
-                    if (err) {
-                        console.log("APIToolkit: error publishing message to pubsub");
-                        console.error(err);
-                    }
-                }
-            };
-            __classPrivateFieldGet(this, _APIToolkit_pubsub, "f").topic(__classPrivateFieldGet(this, _APIToolkit_topic, "f")).publishMessage({ json: payload }, callback);
+            this.publishMessage(payload);
         };
         const onRespFinishedCB = onRespFinished(__classPrivateFieldGet(this, _APIToolkit_pubsub, "f").topic(__classPrivateFieldGet(this, _APIToolkit_topic, "f")), req, res);
         res.on('finish', onRespFinishedCB);
