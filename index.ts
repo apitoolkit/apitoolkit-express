@@ -59,7 +59,6 @@ export default class APIToolkit {
     this.#redactResponseBody = redactRespBody
     this.#debug = debug
     this.publishMessage = (payload: Payload) => {
-      console.log("original")
       const callback = (err: any, messageId: any) => {
         if (this.#debug) {
           console.log("APIToolkit: pubsub publish callback called; messageId: ", messageId, " error ", err)

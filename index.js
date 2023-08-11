@@ -35,7 +35,6 @@ class APIToolkit {
         __classPrivateFieldSet(this, _APIToolkit_redactResponseBody, redactRespBody, "f");
         __classPrivateFieldSet(this, _APIToolkit_debug, debug, "f");
         this.publishMessage = (payload) => {
-            console.log("original");
             const callback = (err, messageId) => {
                 if (__classPrivateFieldGet(this, _APIToolkit_debug, "f")) {
                     console.log("APIToolkit: pubsub publish callback called; messageId: ", messageId, " error ", err);
