@@ -5,7 +5,6 @@ import request from 'supertest';
 import express, { Request, Response } from 'express';
 import multer from "multer";
 import formidable from 'formidable'
-import exp from "constants";
 
 describe('Express SDK API Tests', () => {
   it('should post data', async () => {
@@ -117,7 +116,6 @@ describe('File Upload Endpoint', () => {
   it('should upload files (multer)', async () => {
     const app = express();
     let published = false
-    const redactHeaders = ['Authorization', "X-SECRET"]
     const client = await APIToolkit.NewClient({ apiKey: "<API_KEY>" })
     client.publishMessage = (payload: Payload) => {
       expect(payload.method).toBe("POST")
