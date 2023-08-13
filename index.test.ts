@@ -3,14 +3,18 @@ import APIToolkit from './index';
 import { PubSub } from '@google-cloud/pubsub';
 import request from 'supertest';
 import express, { Request, Response } from 'express';
-
+import multer from "multer";
+import formidable from 'formidable'
+import exp from "constants";
 
 describe('Express SDK API Tests', () => {
   it('should post data', async () => {
     const app = express();
     let published = false
     const redactHeaders = ['Authorization', "X-SECRET"]
-    const client = await APIToolkit.NewClient({ apiKey: "<API_KEY>", redactHeaders, redactResponseBody: exampleDataRedaction })
+    const client = await APIToolkit.NewClient({
+      apiKey: "z6JNfcVEO3ozlYZM1aZsGGhI9GHGTtSeuu3v0u4MoTpR99nP", redactHeaders, redactResponseBody: exampleDataRedaction
+    })
     client.publishMessage = (payload: Payload) => {
       expect(payload.method).toBe("POST")
       expect(payload.path_params).toMatchObject({ slug: "slug-value" })
@@ -48,6 +52,8 @@ describe('Express SDK API Tests', () => {
       expect(payload.request_body).toBe(Buffer.from(JSON.stringify(exampleRequestData)).toString('base64'))
       published = true
     }
+    app.use(express.json())
+    app.use(express.urlencoded({ extended: true }))
     app.use(client.expressMiddleware)
     app.post('/:slug/test', (req: Request, res: Response) => {
       res.setHeader("X-API-KEY", "applicationKey")
@@ -71,7 +77,7 @@ describe('Express SDK API Tests', () => {
     const app = express();
     let published = false
     const redactHeaders = ['Authorization', "X-SECRET"]
-    const client = await APIToolkit.NewClient({ apiKey: "<API_KEY>", redactHeaders })
+    const client = await APIToolkit.NewClient({ apiKey: "z6JNfcVEO3ozlYZM1aZsGGhI9GHGTtSeuu3v0u4MoTpR99nP", redactHeaders })
     client.publishMessage = (payload: Payload) => {
       expect(payload.method).toBe("GET")
       expect(payload.path_params).toMatchObject({ slug: "slug-value" })
@@ -102,6 +108,107 @@ describe('Express SDK API Tests', () => {
 
     expect(response.status).toBe(200);
     expect(JSON.stringify(response.body)).toBe(JSON.stringify(exampleRequestData));
+    expect(published).toBe(true)
+  });
+});
+
+describe('File Upload Endpoint', () => {
+  jest.setTimeout(10_000)
+  it('should upload files (multer)', async () => {
+    const app = express();
+    let published = false
+    const redactHeaders = ['Authorization', "X-SECRET"]
+    const client = await APIToolkit.NewClient({ apiKey: "z6JNfcVEO3ozlYZM1aZsGGhI9GHGTtSeuu3v0u4MoTpR99nP" })
+    client.publishMessage = (payload: Payload) => {
+      expect(payload.method).toBe("POST")
+      expect(payload.status_code).toBe(200)
+      expect(payload.request_body).toBe(Buffer.from(JSON.stringify({ name: 'John', file_one: ["[image/png_FILE]"], file_two: ["[image/png_FILE]"] })).toString('base64'))
+      expect(payload.response_body).toBe(Buffer.from(JSON.stringify({ message: 'File upload successful.' })).toString('base64'))
+      published = true
+    }
+
+    app.use(client.expressMiddleware)
+    const storage = multer.memoryStorage();
+    const upload = multer({ storage });
+
+    app.post('/upload-multer', upload.fields([
+      { name: 'file_one' },
+      { name: 'file_two' },
+    ]), (req, res) => {
+      expect(req.body).toMatchObject({ name: 'John' })
+      expect(req.files).toMatchObject({
+        file_one: [
+          {
+            fieldname: 'file_one',
+            originalname: 'file_one.png',
+            encoding: '7bit',
+            mimetype: 'image/png',
+            size: 1538
+          }
+        ],
+        file_two: [
+          {
+            fieldname: 'file_two',
+            originalname: 'file_two.png',
+            encoding: '7bit',
+            mimetype: 'image/png',
+            size: 330532
+          }
+        ]
+      }
+      )
+      res.status(200).json({ message: 'File upload successful.' });
+    });
+    const response = await request(app)
+      .post('/upload-multer')
+      .field('name', 'John')
+      .attach('file_one', './file_one.png')
+      .attach('file_two', './file_two.png')
+    expect(response.status).toBe(200);
+    expect(response.body.message).toBe('File upload successful.');
+    expect(published).toBe(true)
+  });
+
+  it('should upload files (formidable)', async () => {
+    const app = express();
+    let published = false
+    const client = await APIToolkit.NewClient({ apiKey: "z6JNfcVEO3ozlYZM1aZsGGhI9GHGTtSeuu3v0u4MoTpR99nP" })
+    client.publishMessage = (payload: Payload) => {
+      expect(payload.method).toBe("POST")
+      expect(payload.status_code).toBe(200)
+      expect(payload.sdk_type).toBe("JsExpress")
+      expect(payload.response_body).toBe(Buffer.from(JSON.stringify({ message: 'Uploaded successfully' })).toString('base64'))
+      published = true
+    }
+
+    app.use(client.expressMiddleware)
+    app.post('/upload-formidable', (req, res, next) => {
+      const form = formidable({});
+      form.parse(req, (err, fields, files) => {
+        expect(fields).toMatchObject({ name: ['John'] })
+        expect(files).toMatchObject({
+          file_one: [{
+            originalFilename: 'file_one.png',
+            mimetype: 'image/png',
+            size: 1538,
+          }],
+          file_two: [{
+            originalFilename: 'file_two.png',
+            mimetype: 'image/png',
+            size: 330532,
+          }]
+        })
+        res.json({ message: 'Uploaded successfully' });
+      });
+    });
+    const response = await request(app)
+      .post('/upload-formidable')
+      .field('name', 'John')
+      .attach('file_one', './file_one.png')
+      .attach('file_two', './file_two.png');
+
+    expect(response.status).toBe(200);
+    expect(response.body.message).toBe('Uploaded successfully');
     expect(published).toBe(true)
   });
 });
