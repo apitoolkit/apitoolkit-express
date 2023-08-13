@@ -3,6 +3,7 @@ import { PubSub, Topic } from '@google-cloud/pubsub';
 import { NextFunction, Request, Response } from 'express';
 import jsonpath from "jsonpath"
 
+
 export type Config = {
   apiKey: string;
   rootURL?: string;
@@ -83,7 +84,7 @@ export default class APIToolkit {
     })
     if (!resp.ok) throw new Error(`Error getting apitoolkit client_metadata ${resp.status}`);
 
-    const clientMetadata: ClientMetadata = await resp.json();
+    const clientMetadata = await resp.json() as ClientMetadata
     const { pubsub_project_id, topic_id, project_id, pubsub_push_service_account } = clientMetadata;
     const pubsubClient = new PubSub({
       projectId: pubsub_project_id,
@@ -105,12 +106,6 @@ export default class APIToolkit {
 
     const start_time = process.hrtime.bigint();
     let respBody: any = null;
-    let reqBody = "";
-    req.on('data', function (chunk) { reqBody += chunk })
-    req.on('end', function () {
-      // req.rawBody = data;
-      // next();
-    });
 
     const oldSend = res.send;
     res.send = (val) => {
@@ -123,6 +118,29 @@ export default class APIToolkit {
       res.removeListener('error', onRespFinished(topic, req, res))
       res.removeListener('finish', onRespFinished(topic, req, res))
 
+      let reqBody = ""
+      if (req.body) {
+        try {
+          if (req.is("multipart/form-data")) {
+            if (req.file) {
+              req.body[req.file.fieldname] = `[${req.file.mimetype}_FILE]`
+            } else if (req.files) {
+              if (!Array.isArray(req.files)) {
+                for (const file in req.files) {
+                  req.body[file] = req.files[file].map(f => `[${f.mimetype}_FILE]`);
+                }
+              } else {
+                for (const file of req.files) {
+                  req.body[file.fieldname] = `[${file.mimetype}_FILE]`;
+                }
+              }
+            }
+          }
+          reqBody = JSON.stringify(req.body)
+        } catch (error) {
+          reqBody = String(req.body)
+        }
+      }
       const reqObjEntries: Array<[string, string[]]> = Object.entries(req.headers)
         .map(([k, v]: [string, any]): [string, string[]] => [k, Array.isArray(v) ? v : [v]]);
       const reqHeaders = new Map<string, string[]>(reqObjEntries)
@@ -194,7 +212,7 @@ export default class APIToolkit {
       })
       return JSON.stringify(bodyOB)
     } catch (error) {
-      return ""
+      return body
     }
   }
 }
