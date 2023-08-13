@@ -13,7 +13,7 @@ describe('Express SDK API Tests', () => {
     let published = false
     const redactHeaders = ['Authorization', "X-SECRET"]
     const client = await APIToolkit.NewClient({
-      apiKey: "z6JNfcVEO3ozlYZM1aZsGGhI9GHGTtSeuu3v0u4MoTpR99nP", redactHeaders, redactResponseBody: exampleDataRedaction
+      apiKey: "<API_KEY>", redactHeaders, redactResponseBody: exampleDataRedaction
     })
     client.publishMessage = (payload: Payload) => {
       expect(payload.method).toBe("POST")
@@ -77,7 +77,7 @@ describe('Express SDK API Tests', () => {
     const app = express();
     let published = false
     const redactHeaders = ['Authorization', "X-SECRET"]
-    const client = await APIToolkit.NewClient({ apiKey: "z6JNfcVEO3ozlYZM1aZsGGhI9GHGTtSeuu3v0u4MoTpR99nP", redactHeaders })
+    const client = await APIToolkit.NewClient({ apiKey: "<API_KEY>", redactHeaders })
     client.publishMessage = (payload: Payload) => {
       expect(payload.method).toBe("GET")
       expect(payload.path_params).toMatchObject({ slug: "slug-value" })
@@ -118,7 +118,7 @@ describe('File Upload Endpoint', () => {
     const app = express();
     let published = false
     const redactHeaders = ['Authorization', "X-SECRET"]
-    const client = await APIToolkit.NewClient({ apiKey: "z6JNfcVEO3ozlYZM1aZsGGhI9GHGTtSeuu3v0u4MoTpR99nP" })
+    const client = await APIToolkit.NewClient({ apiKey: "<API_KEY>" })
     client.publishMessage = (payload: Payload) => {
       expect(payload.method).toBe("POST")
       expect(payload.status_code).toBe(200)
@@ -172,7 +172,7 @@ describe('File Upload Endpoint', () => {
   it('should upload files (formidable)', async () => {
     const app = express();
     let published = false
-    const client = await APIToolkit.NewClient({ apiKey: "z6JNfcVEO3ozlYZM1aZsGGhI9GHGTtSeuu3v0u4MoTpR99nP" })
+    const client = await APIToolkit.NewClient({ apiKey: "<API_KEY>" })
     client.publishMessage = (payload: Payload) => {
       expect(payload.method).toBe("POST")
       expect(payload.status_code).toBe(200)
