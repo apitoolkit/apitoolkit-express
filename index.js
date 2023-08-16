@@ -76,12 +76,6 @@ class APIToolkit {
         }
         const start_time = process.hrtime.bigint();
         let respBody = null;
-        let reqBody = "";
-        req.on('data', function (chunk) { reqBody += chunk; });
-        req.on('end', function () {
-            // req.rawBody = data;
-            // next();
-        });
         const oldSend = res.send;
         res.send = (val) => {
             respBody = val;
@@ -91,6 +85,32 @@ class APIToolkit {
             res.removeListener('close', onRespFinished(topic, req, res));
             res.removeListener('error', onRespFinished(topic, req, res));
             res.removeListener('finish', onRespFinished(topic, req, res));
+            let reqBody = "";
+            if (req.body) {
+                try {
+                    if (req.is("multipart/form-data")) {
+                        if (req.file) {
+                            req.body[req.file.fieldname] = `[${req.file.mimetype}_FILE]`;
+                        }
+                        else if (req.files) {
+                            if (!Array.isArray(req.files)) {
+                                for (const file in req.files) {
+                                    req.body[file] = req.files[file].map(f => `[${f.mimetype}_FILE]`);
+                                }
+                            }
+                            else {
+                                for (const file of req.files) {
+                                    req.body[file.fieldname] = `[${file.mimetype}_FILE]`;
+                                }
+                            }
+                        }
+                    }
+                    reqBody = JSON.stringify(req.body);
+                }
+                catch (error) {
+                    reqBody = String(req.body);
+                }
+            }
             const reqObjEntries = Object.entries(req.headers)
                 .map(([k, v]) => [k, Array.isArray(v) ? v : [v]]);
             const reqHeaders = new Map(reqObjEntries);
@@ -155,7 +175,7 @@ class APIToolkit {
             return JSON.stringify(bodyOB);
         }
         catch (error) {
-            return "";
+            return body;
         }
     }
 }
