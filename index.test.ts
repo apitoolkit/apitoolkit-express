@@ -5,6 +5,7 @@ import request from 'supertest';
 import express, { Request, Response } from 'express';
 import multer from "multer";
 import formidable from 'formidable'
+import busboy from 'busboy'
 
 describe('Express SDK API Tests', () => {
   it('should post data', async () => {
@@ -135,26 +136,21 @@ describe('File Upload Endpoint', () => {
     ]), (req, res) => {
       expect(req.body).toMatchObject({ name: 'John' })
       expect(req.files).toMatchObject({
-        file_one: [
-          {
-            fieldname: 'file_one',
-            originalname: 'file_one.png',
-            encoding: '7bit',
-            mimetype: 'image/png',
-            size: 1538
-          }
-        ],
-        file_two: [
-          {
-            fieldname: 'file_two',
-            originalname: 'file_two.png',
-            encoding: '7bit',
-            mimetype: 'image/png',
-            size: 330532
-          }
-        ]
-      }
-      )
+        file_one: [{
+          fieldname: 'file_one',
+          originalname: 'file_one.png',
+          encoding: '7bit',
+          mimetype: 'image/png',
+          size: 1538
+        }],
+        file_two: [{
+          fieldname: 'file_two',
+          originalname: 'file_two.png',
+          encoding: '7bit',
+          mimetype: 'image/png',
+          size: 330532
+        }]
+      })
       res.status(200).json({ message: 'File upload successful.' });
     });
     const response = await request(app)
@@ -178,7 +174,6 @@ describe('File Upload Endpoint', () => {
       expect(payload.response_body).toBe(Buffer.from(JSON.stringify({ message: 'Uploaded successfully' })).toString('base64'))
       published = true
     }
-
     app.use(client.expressMiddleware)
     app.post('/upload-formidable', (req, res, next) => {
       const form = formidable({});
@@ -201,6 +196,54 @@ describe('File Upload Endpoint', () => {
     });
     const response = await request(app)
       .post('/upload-formidable')
+      .field('name', 'John')
+      .attach('file_one', './file_one.png')
+      .attach('file_two', './file_two.png');
+    expect(response.status).toBe(200);
+    expect(response.body.message).toBe('Uploaded successfully');
+    expect(published).toBe(true)
+  });
+
+
+  it('should upload files (busboy)', async () => {
+    const app = express();
+    let published = false
+    const client = await APIToolkit.NewClient({ apiKey: "<API_KEY>" })
+    client.publishMessage = (payload: Payload) => {
+      expect(payload.method).toBe("POST")
+      expect(payload.status_code).toBe(200)
+      expect(payload.sdk_type).toBe("JsExpress")
+      expect(payload.response_body).toBe(Buffer.from(JSON.stringify({ message: 'Uploaded successfully' })).toString('base64'))
+      published = true
+    }
+    app.use(client.expressMiddleware)
+    app.post('/upload-busboy',
+      (req, res) => {
+        let recieved = 0
+        const bb = busboy({ headers: req.headers });
+        bb.on('file', (name, file, info) => {
+          file.resume();
+          recieved++
+          if (name === "file_one") {
+            expect(info).toMatchObject({ filename: 'file_one.png', encoding: '7bit', mimeType: 'image/png' })
+          } else {
+            expect(info).toMatchObject({ filename: 'file_two.png', encoding: '7bit', mimeType: 'image/png' })
+          }
+        });
+        bb.on('field', (name, value) => {
+          expect(name).toBe("name")
+          expect(value).toBe("John")
+        })
+        bb.on('finish', () => {
+          expect(recieved).toBe(2)
+          res.json({ message: 'Uploaded successfully' });
+        });
+        req.pipe(bb);
+        return;
+      });
+
+    const response = await request(app)
+      .post('/upload-busboy')
       .field('name', 'John')
       .attach('file_one', './file_one.png')
       .attach('file_two', './file_two.png');
