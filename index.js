@@ -159,5 +159,5 @@ class APIToolkit {
         }
     }
 }
-exports.default = APIToolkit;
 _APIToolkit_topic = new WeakMap(), _APIToolkit_pubsub = new WeakMap(), _APIToolkit_project_id = new WeakMap(), _APIToolkit_redactHeaders = new WeakMap(), _APIToolkit_redactRequestBody = new WeakMap(), _APIToolkit_redactResponseBody = new WeakMap(), _APIToolkit_debug = new WeakMap();
+exports.default = APIToolkit;
