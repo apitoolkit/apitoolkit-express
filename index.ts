@@ -174,7 +174,7 @@ export default class APIToolkit {
         sdk_type: "JsExpress",
         status_code: res.statusCode,
         timestamp: new Date().toISOString(),
-        url_path: req.route?.path ?? req.originalUrl,
+        url_path: req.route?.path ?? "",
       }
       if (this.#debug) {
         console.log("APIToolkit: publish prepared payload ")
