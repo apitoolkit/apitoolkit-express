@@ -66,7 +66,6 @@ describe('Express SDK API Tests', () => {
       .set('Content-Type', 'application/json')
       .set('X-API-KEY', 'past-3')
       .send(exampleRequestData);
-
     expect(response.status).toBe(200);
     expect(response.body.status).toBe("success");
     expect(published).toBe(true)
@@ -110,7 +109,41 @@ describe('Express SDK API Tests', () => {
     expect(JSON.stringify(response.body)).toBe(JSON.stringify(exampleRequestData));
     expect(published).toBe(true)
   });
+
+  it('should ignore path for endpoins with OPTION', async () => {
+    const app = express();
+    let published = false
+    const client = await APIToolkit.NewClient({ apiKey: "<API_KEY>" })
+    client.publishMessage = (payload: Payload) => {
+      expect(payload.method).toBe("OPTIONS")
+      expect(payload.status_code).toBe(200)
+      expect(payload.sdk_type).toBe("JsExpress")
+      expect(payload.url_path).toBe("")
+      published = true
+    }
+
+    app.use(client.expressMiddleware)
+    app.use((req, res, next) => {
+      if (req.method === "OPTIONS") {
+        res.json({ message: "OPTIONS ignored" })
+        return
+      }
+      next()
+    })
+    app.options('/:slug/test', (req: Request, res: Response) => {
+      res.setHeader("X-API-KEY", "applicationKey")
+      res.header("X-SECRET", "secret value")
+      res.json({ message: "OPTIONS not ignore" })
+    });
+
+    const response = await request(app)
+      .options('/slug-value/test')
+    expect(response.status).toBe(200);
+    expect(response.body.message).toBe("OPTIONS ignored")
+    expect(published).toBe(true)
+  })
 });
+
 
 describe('File Upload Endpoint', () => {
   jest.setTimeout(10_000)
@@ -166,7 +199,9 @@ describe('File Upload Endpoint', () => {
   it('should upload files (formidable)', async () => {
     const app = express();
     let published = false
-    const client = await APIToolkit.NewClient({ apiKey: "<API_KEY>" })
+    const client = await APIToolkit.NewClient({
+      apiKey: "<API_KEY>"
+    })
     client.publishMessage = (payload: Payload) => {
       expect(payload.method).toBe("POST")
       expect(payload.status_code).toBe(200)
