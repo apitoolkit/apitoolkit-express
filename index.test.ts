@@ -1,13 +1,14 @@
-import { Config, Payload } from "./index";
+import { Payload } from "./index";
 import APIToolkit from "./index";
 import { PubSub } from "@google-cloud/pubsub";
 import request from "supertest";
-import express, { Request, Response } from "express";
+import express, { Request, Response, Router } from "express";
 import multer from "multer";
 import formidable from "formidable";
 import busboy from "busboy";
 
-const APIKEY = "wvZPJcVFbCwznN1D06ZsQj4d9GKSStSev7zkhL9bqjAFoN+T"
+const APIKEY = process.env["APITOOLKIT_KEY"] || ''
+
 
 describe("Express SDK API Tests", () => {
   it("should post data", async () => {
@@ -100,6 +101,76 @@ describe("Express SDK API Tests", () => {
       .get("/slug-value/test?param1=abc&param2=123")
       .set("Content-Type", "application/json")
       .set("X-API-KEY", "past-3")
+      .send(exampleRequestData);
+
+    expect(response.status).toBe(200);
+    expect(JSON.stringify(response.body)).toBe(JSON.stringify(exampleRequestData));
+    expect(published).toBe(true);
+  });
+
+
+  it("should check sub routes", async () => {
+    const app = express();
+    let published = false;
+    const redactHeaders = ["Authorization", "X-SECRET"];
+    const client = await APIToolkit.NewClient({ apiKey: APIKEY, redactHeaders });
+    client.publishMessage = (payload: Payload) => {
+      expect(payload.sdk_type).toBe("JsExpress");
+      expect(payload.url_path).toBe("/parent/:slug/test");
+      expect(payload.raw_url).toBe("/parent/slug-value/test?param1=abc&param2=123");
+      published = true;
+    };
+    app.use(client.expressMiddleware);
+    
+    const router = Router();
+    router.get("/:slug/test", (req: Request, res: Response) => {
+      res.setHeader("X-API-KEY", "applicationKey");
+      res.header("X-SECRET", "secret value");
+      setTimeout(() => {
+        res.json(exampleRequestData);
+      }, 500);
+    });
+    app.use("/parent", router)
+
+    const response = await request(app)
+      .get("/parent/slug-value/test?param1=abc&param2=123")
+      .send(exampleRequestData);
+
+    expect(response.status).toBe(200);
+    expect(JSON.stringify(response.body)).toBe(JSON.stringify(exampleRequestData));
+    expect(published).toBe(true);
+  });
+
+  it("should check sub sub sub routes", async () => {
+    const app = express();
+    let published = false;
+    const redactHeaders = ["Authorization", "X-SECRET"];
+    const client = await APIToolkit.NewClient({ apiKey: APIKEY, redactHeaders });
+    client.publishMessage = (payload: Payload) => {
+      expect(payload.sdk_type).toBe("JsExpress");
+      expect(payload.url_path).toBe("/parent/parent2/parent3/:slug/test");
+      expect(payload.raw_url).toBe("/parent/parent2/parent3/slug-value/test?param1=abc&param2=123");
+      published = true;
+    };
+    app.use(client.expressMiddleware);
+    
+    const router = Router();
+    router.get("/:slug/test", (_req: Request, res: Response) => {
+      res.setHeader("X-API-KEY", "applicationKey");
+      res.header("X-SECRET", "secret value");
+      setTimeout(() => {
+        res.json(exampleRequestData);
+      }, 500);
+    });
+
+    const router3 = Router();
+    router3.use("/parent3", router)
+
+    const router2 = Router();
+    router2.use("/parent2", router3)
+    app.use("/parent", router2)
+    const response = await request(app)
+      .get("/parent/parent2/parent3/slug-value/test?param1=abc&param2=123")
       .send(exampleRequestData);
 
     expect(response.status).toBe(200);

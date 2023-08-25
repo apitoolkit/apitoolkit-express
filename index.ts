@@ -155,6 +155,11 @@ export default class APIToolkit {
       })
       const queryParams = Object.fromEntries(queryObjEntries)
       const pathParams = req.params ?? {}
+      let urlPath = req.route?.path ?? ""
+      let rawURL = req.originalUrl
+      if (req.baseUrl && req.baseUrl != ""){
+        urlPath = req.baseUrl + urlPath
+      }
 
       const payload: Payload = {
         duration: Number(process.hrtime.bigint() - start_time),
@@ -165,7 +170,7 @@ export default class APIToolkit {
         proto_minor: 1,
         proto_major: 1,
         query_params: queryParams,
-        raw_url: req.url,
+        raw_url: rawURL,
         referer: req.headers.referer ?? '',
         request_body: Buffer.from(this.redactFields(reqBody, this.#redactRequestBody)).toString('base64'),
         request_headers: this.redactHeaders(reqHeaders, this.#redactHeaders),
@@ -174,7 +179,7 @@ export default class APIToolkit {
         sdk_type: "JsExpress",
         status_code: res.statusCode,
         timestamp: new Date().toISOString(),
-        url_path: req.route?.path ?? "",
+        url_path: urlPath,
       }
       if (this.#debug) {
         console.log("APIToolkit: publish prepared payload ")
