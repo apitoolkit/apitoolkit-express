@@ -142,7 +142,7 @@ class APIToolkit {
                 sdk_type: "JsExpress",
                 status_code: res.statusCode,
                 timestamp: new Date().toISOString(),
-                url_path: req.route?.path ?? req.originalUrl,
+                url_path: req.route?.path ?? "",
             };
             if (__classPrivateFieldGet(this, _APIToolkit_debug, "f")) {
                 console.log("APIToolkit: publish prepared payload ");

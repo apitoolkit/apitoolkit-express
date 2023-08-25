@@ -127,7 +127,7 @@ export default class APIToolkit {
             } else if (req.files) {
               if (!Array.isArray(req.files)) {
                 for (const file in req.files) {
-                  req.body[file] = req.files[file].map(f => `[${f.mimetype}_FILE]`);
+                  req.body[file] = (req.files[file] as any).map((f:any) => `[${f.mimetype}_FILE]`);
                 }
               } else {
                 for (const file of req.files) {

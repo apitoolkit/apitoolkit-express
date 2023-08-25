@@ -7,13 +7,15 @@ import multer from "multer";
 import formidable from "formidable";
 import busboy from "busboy";
 
+const APIKEY = "wvZPJcVFbCwznN1D06ZsQj4d9GKSStSev7zkhL9bqjAFoN+T"
+
 describe("Express SDK API Tests", () => {
   it("should post data", async () => {
     const app = express();
     let published = false;
     const redactHeaders = ["Authorization", "X-SECRET"];
     const client = await APIToolkit.NewClient({
-      apiKey: "<API_KEY>",
+      apiKey: APIKEY,
       redactHeaders,
       redactResponseBody: exampleDataRedaction,
     });
@@ -69,7 +71,7 @@ describe("Express SDK API Tests", () => {
     const app = express();
     let published = false;
     const redactHeaders = ["Authorization", "X-SECRET"];
-    const client = await APIToolkit.NewClient({ apiKey: "<API_KEY>", redactHeaders });
+    const client = await APIToolkit.NewClient({ apiKey: APIKEY, redactHeaders });
     client.publishMessage = (payload: Payload) => {
       expect(payload.method).toBe("GET");
       expect(payload.path_params).toMatchObject({ slug: "slug-value" });
@@ -108,7 +110,7 @@ describe("Express SDK API Tests", () => {
   it("should ignore path for endpoins with OPTION", async () => {
     const app = express();
     let published = false;
-    const client = await APIToolkit.NewClient({ apiKey: "<API_KEY>" });
+    const client = await APIToolkit.NewClient({ apiKey: APIKEY });
     client.publishMessage = (payload: Payload) => {
       expect(payload.method).toBe("OPTIONS");
       expect(payload.status_code).toBe(200);
@@ -143,7 +145,7 @@ describe("File Upload Endpoint", () => {
   it("should upload files (multer)", async () => {
     const app = express();
     let published = false;
-    const client = await APIToolkit.NewClient({ apiKey: "<API_KEY>" });
+    const client = await APIToolkit.NewClient({ apiKey: APIKEY });
     client.publishMessage = (payload: Payload) => {
       expect(payload.method).toBe("POST");
       expect(payload.status_code).toBe(200);
@@ -208,7 +210,7 @@ describe("File Upload Endpoint", () => {
     const app = express();
     let published = false;
     const client = await APIToolkit.NewClient({
-      apiKey: "<API_KEY>",
+      apiKey: APIKEY,
     });
     client.publishMessage = (payload: Payload) => {
       expect(payload.method).toBe("POST");
@@ -256,7 +258,7 @@ describe("File Upload Endpoint", () => {
   it("should upload files (busboy)", async () => {
     const app = express();
     let published = false;
-    const client = await APIToolkit.NewClient({ apiKey: "<API_KEY>" });
+    const client = await APIToolkit.NewClient({ apiKey: APIKEY });
     client.publishMessage = (payload: Payload) => {
       expect(payload.method).toBe("POST");
       expect(payload.status_code).toBe(200);
