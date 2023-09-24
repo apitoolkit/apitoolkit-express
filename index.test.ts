@@ -6,9 +6,15 @@ import express, { Request, Response, Router } from "express";
 import multer from "multer";
 import formidable from "formidable";
 import busboy from "busboy";
+import axios, { AxiosResponse } from 'axios';
 
-const APIKEY = process.env["APITOOLKIT_KEY"] || ''
-
+export const APIKEY = process.env["APITOOLKIT_KEY"] || "";
+export const EmptyClientMetadata = {
+  pubsub_project_id: "pid",
+  topic_id: "tid",
+  project_id: "00000000-0000-0000-0000-000000000000",
+  pubsub_push_service_account: null,
+};
 
 describe("Express SDK API Tests", () => {
   it("should post data", async () => {
@@ -19,6 +25,7 @@ describe("Express SDK API Tests", () => {
       apiKey: APIKEY,
       redactHeaders,
       redactResponseBody: exampleDataRedaction,
+      clientMetadata: EmptyClientMetadata,
     });
     client.publishMessage = (payload: Payload) => {
       expect(payload.method).toBe("POST");
@@ -72,7 +79,11 @@ describe("Express SDK API Tests", () => {
     const app = express();
     let published = false;
     const redactHeaders = ["Authorization", "X-SECRET"];
-    const client = await APIToolkit.NewClient({ apiKey: APIKEY, redactHeaders });
+    const client = await APIToolkit.NewClient({
+      apiKey: APIKEY,
+      redactHeaders,
+      clientMetadata: EmptyClientMetadata,
+    });
     client.publishMessage = (payload: Payload) => {
       expect(payload.method).toBe("GET");
       expect(payload.path_params).toMatchObject({ slug: "slug-value" });
@@ -108,12 +119,15 @@ describe("Express SDK API Tests", () => {
     expect(published).toBe(true);
   });
 
-
   it("should check sub routes", async () => {
     const app = express();
     let published = false;
     const redactHeaders = ["Authorization", "X-SECRET"];
-    const client = await APIToolkit.NewClient({ apiKey: APIKEY, redactHeaders });
+    const client = await APIToolkit.NewClient({
+      apiKey: APIKEY,
+      redactHeaders,
+      clientMetadata: EmptyClientMetadata,
+    });
     client.publishMessage = (payload: Payload) => {
       expect(payload.sdk_type).toBe("JsExpress");
       expect(payload.url_path).toBe("/parent/:slug/test");
@@ -121,7 +135,7 @@ describe("Express SDK API Tests", () => {
       published = true;
     };
     app.use(client.expressMiddleware);
-    
+
     const router = Router();
     router.get("/:slug/test", (req: Request, res: Response) => {
       res.setHeader("X-API-KEY", "applicationKey");
@@ -130,7 +144,7 @@ describe("Express SDK API Tests", () => {
         res.json(exampleRequestData);
       }, 500);
     });
-    app.use("/parent", router)
+    app.use("/parent", router);
 
     const response = await request(app)
       .get("/parent/slug-value/test?param1=abc&param2=123")
@@ -145,7 +159,11 @@ describe("Express SDK API Tests", () => {
     const app = express();
     let published = false;
     const redactHeaders = ["Authorization", "X-SECRET"];
-    const client = await APIToolkit.NewClient({ apiKey: APIKEY, redactHeaders });
+    const client = await APIToolkit.NewClient({
+      apiKey: APIKEY,
+      redactHeaders,
+      clientMetadata: EmptyClientMetadata,
+    });
     client.publishMessage = (payload: Payload) => {
       expect(payload.sdk_type).toBe("JsExpress");
       expect(payload.url_path).toBe("/parent/parent2/parent3/:slug/test");
@@ -153,7 +171,7 @@ describe("Express SDK API Tests", () => {
       published = true;
     };
     app.use(client.expressMiddleware);
-    
+
     const router = Router();
     router.get("/:slug/test", (_req: Request, res: Response) => {
       res.setHeader("X-API-KEY", "applicationKey");
@@ -164,11 +182,11 @@ describe("Express SDK API Tests", () => {
     });
 
     const router3 = Router();
-    router3.use("/parent3", router)
+    router3.use("/parent3", router);
 
     const router2 = Router();
-    router2.use("/parent2", router3)
-    app.use("/parent", router2)
+    router2.use("/parent2", router3);
+    app.use("/parent", router2);
     const response = await request(app)
       .get("/parent/parent2/parent3/slug-value/test?param1=abc&param2=123")
       .send(exampleRequestData);
@@ -181,7 +199,10 @@ describe("Express SDK API Tests", () => {
   it("should ignore path for endpoins with OPTION", async () => {
     const app = express();
     let published = false;
-    const client = await APIToolkit.NewClient({ apiKey: APIKEY });
+    const client = await APIToolkit.NewClient({
+      apiKey: APIKEY,
+      clientMetadata: EmptyClientMetadata,
+    });
     client.publishMessage = (payload: Payload) => {
       expect(payload.method).toBe("OPTIONS");
       expect(payload.status_code).toBe(200);
@@ -216,7 +237,10 @@ describe("File Upload Endpoint", () => {
   it("should upload files (multer)", async () => {
     const app = express();
     let published = false;
-    const client = await APIToolkit.NewClient({ apiKey: APIKEY });
+    const client = await APIToolkit.NewClient({
+      apiKey: APIKEY,
+      clientMetadata: EmptyClientMetadata,
+    });
     client.publishMessage = (payload: Payload) => {
       expect(payload.method).toBe("POST");
       expect(payload.status_code).toBe(200);
@@ -282,6 +306,7 @@ describe("File Upload Endpoint", () => {
     let published = false;
     const client = await APIToolkit.NewClient({
       apiKey: APIKEY,
+      clientMetadata: EmptyClientMetadata,
     });
     client.publishMessage = (payload: Payload) => {
       expect(payload.method).toBe("POST");
@@ -329,7 +354,10 @@ describe("File Upload Endpoint", () => {
   it("should upload files (busboy)", async () => {
     const app = express();
     let published = false;
-    const client = await APIToolkit.NewClient({ apiKey: APIKEY });
+    const client = await APIToolkit.NewClient({
+      apiKey: APIKEY,
+      clientMetadata: EmptyClientMetadata,
+    });
     client.publishMessage = (payload: Payload) => {
       expect(payload.method).toBe("POST");
       expect(payload.status_code).toBe(200);

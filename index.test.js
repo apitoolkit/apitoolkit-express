@@ -1,25 +1,56 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.EmptyClientMetadata = exports.APIKEY = void 0;
 const index_1 = __importDefault(require("./index"));
 const pubsub_1 = require("@google-cloud/pubsub");
 const supertest_1 = __importDefault(require("supertest"));
-const express_1 = __importDefault(require("express"));
+const express_1 = __importStar(require("express"));
 const multer_1 = __importDefault(require("multer"));
 const formidable_1 = __importDefault(require("formidable"));
 const busboy_1 = __importDefault(require("busboy"));
-const APIKEY = "wvZPJcVFbCwznN1D06ZsQj4d9GKSStSev7zkhL9bqjAFoN+T";
+exports.APIKEY = process.env["APITOOLKIT_KEY"] || "";
+exports.EmptyClientMetadata = {
+    pubsub_project_id: "pid",
+    topic_id: "tid",
+    project_id: "00000000-0000-0000-0000-000000000000",
+    pubsub_push_service_account: null,
+};
 describe("Express SDK API Tests", () => {
     it("should post data", async () => {
         const app = (0, express_1.default)();
         let published = false;
         const redactHeaders = ["Authorization", "X-SECRET"];
         const client = await index_1.default.NewClient({
-            apiKey: APIKEY,
+            apiKey: exports.APIKEY,
             redactHeaders,
             redactResponseBody: exampleDataRedaction,
+            clientMetadata: exports.EmptyClientMetadata,
         });
         client.publishMessage = (payload) => {
             expect(payload.method).toBe("POST");
@@ -65,7 +96,11 @@ describe("Express SDK API Tests", () => {
         const app = (0, express_1.default)();
         let published = false;
         const redactHeaders = ["Authorization", "X-SECRET"];
-        const client = await index_1.default.NewClient({ apiKey: APIKEY, redactHeaders });
+        const client = await index_1.default.NewClient({
+            apiKey: exports.APIKEY,
+            redactHeaders,
+            clientMetadata: exports.EmptyClientMetadata,
+        });
         client.publishMessage = (payload) => {
             expect(payload.method).toBe("GET");
             expect(payload.path_params).toMatchObject({ slug: "slug-value" });
@@ -95,10 +130,81 @@ describe("Express SDK API Tests", () => {
         expect(JSON.stringify(response.body)).toBe(JSON.stringify(exampleRequestData));
         expect(published).toBe(true);
     });
+    it("should check sub routes", async () => {
+        const app = (0, express_1.default)();
+        let published = false;
+        const redactHeaders = ["Authorization", "X-SECRET"];
+        const client = await index_1.default.NewClient({
+            apiKey: exports.APIKEY,
+            redactHeaders,
+            clientMetadata: exports.EmptyClientMetadata,
+        });
+        client.publishMessage = (payload) => {
+            expect(payload.sdk_type).toBe("JsExpress");
+            expect(payload.url_path).toBe("/parent/:slug/test");
+            expect(payload.raw_url).toBe("/parent/slug-value/test?param1=abc&param2=123");
+            published = true;
+        };
+        app.use(client.expressMiddleware);
+        const router = (0, express_1.Router)();
+        router.get("/:slug/test", (req, res) => {
+            res.setHeader("X-API-KEY", "applicationKey");
+            res.header("X-SECRET", "secret value");
+            setTimeout(() => {
+                res.json(exampleRequestData);
+            }, 500);
+        });
+        app.use("/parent", router);
+        const response = await (0, supertest_1.default)(app)
+            .get("/parent/slug-value/test?param1=abc&param2=123")
+            .send(exampleRequestData);
+        expect(response.status).toBe(200);
+        expect(JSON.stringify(response.body)).toBe(JSON.stringify(exampleRequestData));
+        expect(published).toBe(true);
+    });
+    it("should check sub sub sub routes", async () => {
+        const app = (0, express_1.default)();
+        let published = false;
+        const redactHeaders = ["Authorization", "X-SECRET"];
+        const client = await index_1.default.NewClient({
+            apiKey: exports.APIKEY,
+            redactHeaders,
+            clientMetadata: exports.EmptyClientMetadata,
+        });
+        client.publishMessage = (payload) => {
+            expect(payload.sdk_type).toBe("JsExpress");
+            expect(payload.url_path).toBe("/parent/parent2/parent3/:slug/test");
+            expect(payload.raw_url).toBe("/parent/parent2/parent3/slug-value/test?param1=abc&param2=123");
+            published = true;
+        };
+        app.use(client.expressMiddleware);
+        const router = (0, express_1.Router)();
+        router.get("/:slug/test", (_req, res) => {
+            res.setHeader("X-API-KEY", "applicationKey");
+            res.header("X-SECRET", "secret value");
+            setTimeout(() => {
+                res.json(exampleRequestData);
+            }, 500);
+        });
+        const router3 = (0, express_1.Router)();
+        router3.use("/parent3", router);
+        const router2 = (0, express_1.Router)();
+        router2.use("/parent2", router3);
+        app.use("/parent", router2);
+        const response = await (0, supertest_1.default)(app)
+            .get("/parent/parent2/parent3/slug-value/test?param1=abc&param2=123")
+            .send(exampleRequestData);
+        expect(response.status).toBe(200);
+        expect(JSON.stringify(response.body)).toBe(JSON.stringify(exampleRequestData));
+        expect(published).toBe(true);
+    });
     it("should ignore path for endpoins with OPTION", async () => {
         const app = (0, express_1.default)();
         let published = false;
-        const client = await index_1.default.NewClient({ apiKey: APIKEY });
+        const client = await index_1.default.NewClient({
+            apiKey: exports.APIKEY,
+            clientMetadata: exports.EmptyClientMetadata,
+        });
         client.publishMessage = (payload) => {
             expect(payload.method).toBe("OPTIONS");
             expect(payload.status_code).toBe(200);
@@ -130,7 +236,10 @@ describe("File Upload Endpoint", () => {
     it("should upload files (multer)", async () => {
         const app = (0, express_1.default)();
         let published = false;
-        const client = await index_1.default.NewClient({ apiKey: APIKEY });
+        const client = await index_1.default.NewClient({
+            apiKey: exports.APIKEY,
+            clientMetadata: exports.EmptyClientMetadata,
+        });
         client.publishMessage = (payload) => {
             expect(payload.method).toBe("POST");
             expect(payload.status_code).toBe(200);
@@ -182,7 +291,8 @@ describe("File Upload Endpoint", () => {
         const app = (0, express_1.default)();
         let published = false;
         const client = await index_1.default.NewClient({
-            apiKey: APIKEY,
+            apiKey: exports.APIKEY,
+            clientMetadata: exports.EmptyClientMetadata,
         });
         client.publishMessage = (payload) => {
             expect(payload.method).toBe("POST");
@@ -227,7 +337,10 @@ describe("File Upload Endpoint", () => {
     it("should upload files (busboy)", async () => {
         const app = (0, express_1.default)();
         let published = false;
-        const client = await index_1.default.NewClient({ apiKey: APIKEY });
+        const client = await index_1.default.NewClient({
+            apiKey: exports.APIKEY,
+            clientMetadata: exports.EmptyClientMetadata,
+        });
         client.publishMessage = (payload) => {
             expect(payload.method).toBe("POST");
             expect(payload.status_code).toBe(200);
