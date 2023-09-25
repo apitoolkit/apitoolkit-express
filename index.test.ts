@@ -1,4 +1,4 @@
-import { Payload } from "./index";
+import { Payload, redactFields, redactHeaders} from "./payload";
 import APIToolkit from "./index";
 import { PubSub } from "@google-cloud/pubsub";
 import request from "supertest";
@@ -419,7 +419,7 @@ describe("testing headers and jsonpath redaction", () => {
     const pubsub = new PubSub({
       projectId: "pubsub_project_id",
     });
-    myClassInstance = new APIToolkit(pubsub, "topic_id", "project_id", [], [], [], true);
+    myClassInstance = new APIToolkit(pubsub, "topic_id", "project_id", {apiKey: "", debug:true});
   });
 
   it("should redact headers correctly", () => {
@@ -431,7 +431,7 @@ describe("testing headers and jsonpath redaction", () => {
 
     const headersToRedact = ["Authorization", "content-type"];
 
-    const redactedHeaders = myClassInstance["redactHeaders"](headers, headersToRedact);
+    const redactedHeaders = redactHeaders(headers, headersToRedact);
 
     expect(redactedHeaders.get("Authorization")).toEqual(["[CLIENT_REDACTED]"]);
     expect(redactedHeaders.get("Content-Type")).toEqual(["[CLIENT_REDACTED]"]);
@@ -443,7 +443,7 @@ describe("testing headers and jsonpath redaction", () => {
       '{"user": {"name": "John", "email": "john@example.com", "books": [{"title": "Book 1", "author": "Author 1"},{"title": "Book 2", "author": "Author 2"}]}}';
     const fieldsToRedact = ["$.user.email", "user.books[*].author"];
 
-    const redactedBody = myClassInstance["redactFields"](body, fieldsToRedact);
+    const redactedBody = redactFields(body, fieldsToRedact);
 
     expect(redactedBody).toContain('"email":"[CLIENT_REDACTED]"');
     expect(redactedBody).toContain(

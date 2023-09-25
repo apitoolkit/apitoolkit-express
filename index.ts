@@ -2,7 +2,8 @@ import fetch from "node-fetch";
 import { PubSub, Topic } from "@google-cloud/pubsub";
 import { NextFunction, Request, Response } from "express";
 import { AsyncLocalStorage } from "async_hooks";
-import jsonpath from "jsonpath";
+import { ATError, Payload, buildPayload } from "./payload";
+import { v4 as uuidv4 } from "uuid";
 
 export type Config = {
   apiKey: string;
@@ -12,6 +13,8 @@ export type Config = {
   redactRequestBody?: string[];
   redactResponseBody?: string[];
   clientMetadata?: ClientMetadata;
+  serviceVersion?: string;
+  tags?: string[];
 };
 
 type ClientMetadata = {
@@ -21,58 +24,23 @@ type ClientMetadata = {
   pubsub_push_service_account: any;
 };
 
-export type Payload = {
-  duration: number;
-  host: string;
-  method: string;
-  path_params: Object;
-  project_id: string;
-  proto_major: number;
-  proto_minor: number;
-  query_params: Object;
-  raw_url: string;
-  referer: string;
-  request_body: string;
-  request_headers: Map<string, string[]>;
-  response_body: string;
-  response_headers: Map<string, string[]>;
-  sdk_type: string;
-  status_code: number;
-  timestamp: string;
-  url_path: string;
-};
+export const asyncLocalStorage = new AsyncLocalStorage<Map<string, any>>();
 
-export default class APIToolkit {
+export class APIToolkit {
   #topic: string;
   #pubsub: PubSub | undefined;
   #project_id: string;
-  #redactHeaders: string[];
-  #redactRequestBody: string[];
-  #redactResponseBody: string[];
-  #debug: boolean;
+  #config: Config;
   publishMessage: (payload: Payload) => void;
 
-  private asyncLocalStorage = new AsyncLocalStorage<Map<string, any>>();
-
-  constructor(
-    pubsub: PubSub | undefined,
-    topic: string,
-    project_id: string,
-    redactHeaders: string[],
-    redactReqBody: string[],
-    redactRespBody: string[],
-    debug: boolean
-  ) {
+  constructor(pubsub: PubSub | undefined, topic: string, project_id: string, config: Config) {
     this.#topic = topic;
     this.#pubsub = pubsub;
     this.#project_id = project_id;
-    this.#redactHeaders = redactHeaders;
-    this.#redactRequestBody = redactReqBody;
-    this.#redactResponseBody = redactRespBody;
-    this.#debug = debug;
+    this.#config = config;
     this.publishMessage = (payload: Payload) => {
       const callback = (err: any, messageId: any) => {
-        if (this.#debug) {
+        if (this.#config.debug) {
           console.log(
             "APIToolkit: pubsub publish callback called; messageId: ",
             messageId,
@@ -92,15 +60,9 @@ export default class APIToolkit {
     this.expressMiddleware = this.expressMiddleware.bind(this);
   }
 
-  static async NewClient({
-    apiKey,
-    rootURL = "https://app.apitoolkit.io",
-    redactHeaders = [],
-    redactRequestBody = [],
-    redactResponseBody = [],
-    debug = false,
-    clientMetadata,
-  }: Config) {
+  static async NewClient(config: Config) {
+    var { apiKey, rootURL = "https://app.apitoolkit.io", clientMetadata } = config;
+
     var pubsubClient;
     if (clientMetadata == null || apiKey != "") {
       clientMetadata = await this.getClientMetadata(rootURL, apiKey);
@@ -111,21 +73,12 @@ export default class APIToolkit {
     }
 
     const { pubsub_project_id, topic_id, project_id, pubsub_push_service_account } = clientMetadata;
-
-    if (debug) {
+    if (config.debug) {
       console.log("apitoolkit:  initialized successfully");
       console.dir(pubsubClient);
     }
 
-    return new APIToolkit(
-      pubsubClient,
-      topic_id,
-      project_id,
-      redactHeaders,
-      redactRequestBody,
-      redactResponseBody,
-      debug
-    );
+    return new APIToolkit(pubsubClient, topic_id, project_id, config);
   }
 
   static async getClientMetadata(rootURL: string, apiKey: string) {
@@ -137,278 +90,206 @@ export default class APIToolkit {
       },
     });
     if (!resp.ok) throw new Error(`Error getting apitoolkit client_metadata ${resp.status}`);
-
     return (await resp.json()) as ClientMetadata;
   }
 
-  public getStore() {
-    return this.asyncLocalStorage.getStore();
-  }
-
-  // public async expressMiddleware(req: Request, res: Response, next: NextFunction) {
-  //   this.asyncLocalStorage.run(new Map(), () => {
-  //     if (this.#debug) {
-  //       console.log("APIToolkit: expressMiddleware called");
-  //     }
-
-  //     const start_time = process.hrtime.bigint();
-  //     let respBody: any = null;
-
-  //     const oldSend = res.send;
-  //     res.send = (val) => {
-  //       respBody = val;
-  //       return oldSend.apply(res, [val]);
-  //     };
-
-  //     const onRespFinished = (topic: Topic | undefined, req: Request, res: Response) => (err: any) => {
-  //       res.removeListener("close", onRespFinished(topic, req, res));
-  //       res.removeListener("error", onRespFinished(topic, req, res));
-  //       res.removeListener("finish", onRespFinished(topic, req, res));
-
-  //       let reqBody = "";
-  //       if (req.body) {
-  //         try {
-  //           if (req.is("multipart/form-data")) {
-  //             if (req.file) {
-  //               req.body[req.file.fieldname] = `[${req.file.mimetype}_FILE]`;
-  //             } else if (req.files) {
-  //               if (!Array.isArray(req.files)) {
-  //                 for (const file in req.files) {
-  //                   req.body[file] = (req.files[file] as any).map(
-  //                     (f: any) => `[${f.mimetype}_FILE]`
-  //                   );
-  //                 }
-  //               } else {
-  //                 for (const file of req.files) {
-  //                   req.body[file.fieldname] = `[${file.mimetype}_FILE]`;
-  //                 }
-  //               }
-  //             }
-  //           }
-  //           reqBody = JSON.stringify(req.body);
-  //         } catch (error) {
-  //           reqBody = String(req.body);
-  //         }
-  //       }
-  //       const reqObjEntries: Array<[string, string[]]> = Object.entries(req.headers).map(
-  //         ([k, v]: [string, any]): [string, string[]] => [k, Array.isArray(v) ? v : [v]]
-  //       );
-  //       const reqHeaders = new Map<string, string[]>(reqObjEntries);
-
-  //       const resObjEntries: Array<[string, string[]]> = Object.entries(res.getHeaders()).map(
-  //         ([k, v]: [string, any]): [string, string[]] => [k, Array.isArray(v) ? v : [v]]
-  //       );
-  //       const resHeaders = new Map<string, string[]>(resObjEntries);
-
-  //       const queryObjEntries = Object.entries(req.query).map(([k, v]) => {
-  //         if (typeof v === "string") return [k, [v]];
-  //         return [k, v];
-  //       });
-  //       const queryParams = Object.fromEntries(queryObjEntries);
-  //       const pathParams = req.params ?? {};
-  //       let urlPath = req.route?.path ?? "";
-  //       let rawURL = req.originalUrl;
-  //       if (req.baseUrl && req.baseUrl != "") {
-  //         urlPath = req.baseUrl + urlPath;
-  //       }
-
-  //       const payload: Payload = {
-  //         duration: Number(process.hrtime.bigint() - start_time),
-  //         host: req.hostname,
-  //         method: req.method,
-  //         path_params: pathParams,
-  //         project_id: this.#project_id,
-  //         proto_minor: 1,
-  //         proto_major: 1,
-  //         query_params: queryParams,
-  //         raw_url: rawURL,
-  //         referer: req.headers.referer ?? "",
-  //         request_body: Buffer.from(this.redactFields(reqBody, this.#redactRequestBody)).toString(
-  //           "base64"
-  //         ),
-  //         request_headers: this.redactHeaders(reqHeaders, this.#redactHeaders),
-  //         response_body: Buffer.from(
-  //           this.redactFields(respBody, this.#redactResponseBody)
-  //         ).toString("base64"),
-  //         response_headers: this.redactHeaders(resHeaders, this.#redactHeaders),
-  //         sdk_type: "JsExpress",
-  //         status_code: res.statusCode,
-  //         timestamp: new Date().toISOString(),
-  //         url_path: urlPath,
-  //       };
-  //       if (this.#debug) {
-  //         console.log("APIToolkit: publish prepared payload ");
-  //         console.dir(payload);
-  //       }
-  //       this.publishMessage(payload);
-  //     };
-
-  //     const onRespFinishedCB = onRespFinished(this.#pubsub?.topic(this.#topic), req, res);
-  //     res.on("finish", onRespFinishedCB);
-  //     res.on("error", onRespFinishedCB);
-  //     // res.on('close', onRespFinishedCB)
-
-  //     next();
-  //   });
+  // public getStore() {
+  //   return this.asyncLocalStorage.getStore();
   // }
 
   public async expressMiddleware(req: Request, res: Response, next: NextFunction) {
-    this.asyncLocalStorage.run(new Map(), () => {
-      if (this.#debug) {
+    asyncLocalStorage.run(new Map(), () => {
+      asyncLocalStorage.getStore()!.set("AT_client", this);
+      asyncLocalStorage.getStore()!.set("AT_project_id", this.#project_id);
+      asyncLocalStorage.getStore()!.set("AT_config", this.#config);
+      asyncLocalStorage.getStore()!.set("AT_errors", []);
+      const msg_id: string = uuidv4();
+      asyncLocalStorage.getStore()!.set("AT_msg_id", msg_id);
+
+      if (this.#config.debug) {
         console.log("APIToolkit: expressMiddleware called");
       }
 
       const start_time = process.hrtime.bigint();
-      const respBody = this.modifyResSend(res);
-      const onRespFinishedCB = this.createOnRespFinishedCallback(start_time, req, res, respBody);
+      let respBody: any = null;
+      const oldSend = res.send;
+      res.send = (val) => {
+        respBody = val;
+        return oldSend.apply(res, [val]);
+      };
 
-      this.attachResponseListeners(res, onRespFinishedCB);
+      const onRespFinished =
+        (topic: Topic | undefined, req: Request, res: Response) => (err: any) => {
+          res.removeListener("close", onRespFinished(topic, req, res));
+          res.removeListener("error", onRespFinished(topic, req, res));
+          res.removeListener("finish", onRespFinished(topic, req, res));
 
-      next();
-    });
-  }
-  private createOnRespFinishedCallback(start_time: bigint, req: Request, res: Response, respBody: any) {
-    return (err: any) => {
-      // The logic for handling the response and publishing the message, e.g.:
-      
-      const payload: Payload = this.createPayload(start_time, req, res, respBody);
-      
-      if (this.#debug) {
-        console.log("APIToolkit: publish prepared payload ");
-        console.dir(payload);
-      }
-      
-      this.publishMessage(payload);
-    };
-  }
-  private attachResponseListeners(res: Response, callback: any) {
-    res.on("finish", callback);
-    res.on("error", callback);
-  }
-
-  private modifyResSend(res: Response): any {
-    let respBody: any = null;
-
-    const oldSend = res.send;
-    res.send = (val) => {
-      respBody = val;
-      return oldSend.apply(res, [val]);
-    };
-
-    return respBody;
-  }
-
-  private createPayload(start_time: bigint, req: Request, res: Response, respBody: any): Payload {
-    // Get information from the request and response objects
-    const reqBody = this.getRequestBody(req);
-    const reqHeaders = this.getHeaders(req.headers);
-    const resHeaders = this.getHeaders(res.getHeaders());
-    const queryParams = this.getQueryParams(req.query);
-    const pathParams = req.params ?? {};
-    const urlPath = this.getUrlPath(req);
-    const rawURL = req.originalUrl;
-
-    // Construct and return the payload object
-    return {
-      duration: Number(process.hrtime.bigint() - start_time),
-      host: req.hostname,
-      method: req.method,
-      path_params: pathParams,
-      project_id: this.#project_id,
-      proto_minor: 1,
-      proto_major: 1,
-      query_params: queryParams,
-      raw_url: rawURL,
-      referer: req.headers.referer ?? "",
-      request_body: Buffer.from(this.redactFields(reqBody, this.#redactRequestBody)).toString(
-        "base64"
-      ),
-      request_headers: this.redactHeaders(reqHeaders, this.#redactHeaders),
-      response_body: Buffer.from(this.redactFields(respBody, this.#redactResponseBody)).toString(
-        "base64"
-      ),
-      response_headers: this.redactHeaders(resHeaders, this.#redactHeaders),
-      sdk_type: "JsExpress",
-      status_code: res.statusCode,
-      timestamp: new Date().toISOString(),
-      url_path: urlPath,
-    };
-  }
-
-  private getRequestBody(req: Request): string {
-    let reqBody = "";
-    if (req.body) {
-      try {
-        if (req.is("multipart/form-data")) {
-          if (req.file) {
-            req.body[req.file.fieldname] = `[${req.file.mimetype}_FILE]`;
-          } else if (req.files) {
-            if (!Array.isArray(req.files)) {
-              for (const file in req.files) {
-                req.body[file] = (req.files[file] as any).map((f: any) => `[${f.mimetype}_FILE]`);
+          let reqBody = "";
+          if (req.body) {
+            try {
+              if (req.is("multipart/form-data")) {
+                if (req.file) {
+                  req.body[req.file.fieldname] = `[${req.file.mimetype}_FILE]`;
+                } else if (req.files) {
+                  if (!Array.isArray(req.files)) {
+                    for (const file in req.files) {
+                      req.body[file] = (req.files[file] as any).map(
+                        (f: any) => `[${f.mimetype}_FILE]`
+                      );
+                    }
+                  } else {
+                    for (const file of req.files) {
+                      req.body[file.fieldname] = `[${file.mimetype}_FILE]`;
+                    }
+                  }
+                }
               }
-            } else {
-              for (const file of req.files) {
-                req.body[file.fieldname] = `[${file.mimetype}_FILE]`;
-              }
+              reqBody = JSON.stringify(req.body);
+            } catch (error) {
+              reqBody = String(req.body);
             }
           }
-        }
-        reqBody = JSON.stringify(req.body);
+
+          const errors = asyncLocalStorage.getStore()?.get("AT_errors") ?? [];
+          const payload = buildPayload(
+            start_time,
+            req,
+            res,
+            reqBody,
+            respBody,
+            this.#config.redactRequestBody ?? [],
+            this.#config.redactResponseBody ?? [],
+            this.#config.redactHeaders ?? [],
+            this.#project_id,
+            errors,
+            this.#config.serviceVersion,
+            this.#config.tags ?? [],
+            msg_id,
+            undefined
+          );
+
+          if (this.#config.debug) {
+            console.log("APIToolkit: publish prepared payload ");
+            console.dir(payload);
+          }
+          this.publishMessage(payload);
+        };
+
+      const onRespFinishedCB = onRespFinished(this.#pubsub?.topic(this.#topic), req, res);
+      res.on("finish", onRespFinishedCB);
+      res.on("error", onRespFinishedCB);
+      // res.on('close', onRespFinishedCB)
+
+      try {
+        next();
       } catch (error) {
-        reqBody = String(req.body);
+        console.log(error);
+        next(error);
       }
-    }
-    return reqBody;
-  }
-
-  private getHeaders(headers: any): Map<string, string[]> {
-    const objEntries: Array<[string, string[]]> = Object.entries(headers).map(
-      ([k, v]: [string, any]): [string, string[]] => [k, Array.isArray(v) ? v : [v]]
-    );
-    return new Map<string, string[]>(objEntries);
-  }
-
-  private getQueryParams(query: any): Object {
-    const queryObjEntries = Object.entries(query).map(([k, v]) => {
-      if (typeof v === "string") return [k, [v]];
-      return [k, v];
     });
-    return Object.fromEntries(queryObjEntries);
-  }
-
-  private getUrlPath(req: Request): string {
-    let urlPath = req.route?.path ?? "";
-    if (req.baseUrl && req.baseUrl !== "") {
-      urlPath = req.baseUrl + urlPath;
-    }
-    return urlPath;
-  }
-
-  private redactHeaders(headers: Map<string, string[]>, headersToRedact: string[]) {
-    const redactedHeaders: Map<string, string[]> = new Map();
-    const headersToRedactLowerCase = headersToRedact.map((header) => header.toLowerCase());
-
-    for (let [key, value] of headers) {
-      const lowerKey = key.toLowerCase();
-      const isRedactKey = headersToRedactLowerCase.includes(lowerKey) || lowerKey === "cookie";
-      redactedHeaders.set(key, isRedactKey ? ["[CLIENT_REDACTED]"] : value);
-    }
-
-    return redactedHeaders;
-  }
-
-  private redactFields(body: string, fieldsToRedact: string[]): string {
-    try {
-      const bodyOB = JSON.parse(body);
-      fieldsToRedact.forEach((path) => {
-        jsonpath.apply(bodyOB, path, function () {
-          return "[CLIENT_REDACTED]";
-        });
-      });
-      return JSON.stringify(bodyOB);
-    } catch (error) {
-      return body;
-    }
   }
 }
+
+export function ReportError(error: any) {
+  if (asyncLocalStorage.getStore() == null) {
+    console.log(
+      "APIToolkit: ReportError used outside of the APIToolkit middleware's scope. Use the APIToolkitClient.ReportError instead, if you're not in a web context."
+    );
+    return Promise.reject(error);
+  }
+
+  const resp = normaliseError(error);
+  if (!resp) {
+    return;
+  }
+
+  const [nError, internalFrames] = resp;
+  const atError = buildError(nError);
+  var errList: ATError[] = asyncLocalStorage.getStore()!.get("AT_errors");
+  errList.push(atError);
+  asyncLocalStorage.getStore()!.set("AT_errors", errList);
+}
+
+// Recursively unwraps an error and returns the original cause.
+function rootCause(err: Error): Error {
+  let cause = err;
+  while (cause && (cause as any).cause) {
+    cause = (cause as any).cause;
+  }
+  return cause;
+}
+
+function normaliseError(maybeError: any): [Error, Number] | undefined {
+  let error;
+  let internalFrames = 0;
+
+  // In some cases:
+  //
+  //  - the promise rejection handler (both in the browser and node)
+  //  - the node uncaughtException handler
+  //
+  // We are really limited in what we can do to get a stacktrace. So we use the
+  // tolerateNonErrors option to ensure that the resulting error communicates as
+  // such.
+  switch (typeof maybeError) {
+    case "string":
+    case "number":
+    case "boolean":
+      error = new Error(String(maybeError));
+      internalFrames += 1;
+      break;
+    case "function":
+      return;
+    case "object":
+      if (maybeError !== null && isError(maybeError)) {
+        error = maybeError;
+      } else if (maybeError !== null && hasNecessaryFields(maybeError)) {
+        error = new Error(maybeError.message || maybeError.errorMessage);
+        error.name = maybeError.name || maybeError.errorClass;
+        internalFrames += 1;
+      } else {
+        // unsupported error
+        return;
+      }
+      break;
+    default:
+    // unsupported errors found
+  }
+
+  return [error, internalFrames];
+}
+
+const hasNecessaryFields = (error: any): boolean =>
+  (typeof error.name === "string" || typeof error.errorClass === "string") &&
+  (typeof error.message === "string" || typeof error.errorMessage === "string");
+
+function isError(value: any): boolean {
+  switch (Object.prototype.toString.call(value)) {
+    case "[object Error]":
+      return true;
+    case "[object Exception]":
+      return true;
+    case "[object DOMException]":
+      return true;
+    default:
+      return value instanceof Error;
+  }
+}
+
+function buildError(err: Error): ATError {
+  const errType = err.constructor.name;
+
+  const rootError = rootCause(err);
+  const rootErrorType = rootError.constructor.name;
+
+  return {
+    when: new Date().toISOString(),
+    error_type: errType,
+    message: err.message,
+    root_error_type: rootErrorType,
+    root_error_message: rootError.message,
+    stack_trace: err.stack ?? "",
+  };
+}
+
+export default APIToolkit;

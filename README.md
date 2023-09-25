@@ -44,7 +44,9 @@ import APIToolkit from 'apitoolkit-express';
 import express from 'express';
 
 const port = 3000;
-const apitoolkit = await APIToolkit.NewClient({ apiKey: '<API-KEY>' });
+const apitoolkit = await APIToolkit.NewClient({ 
+    apiKey: '<API-KEY>', // Required: API Key generated from apitoolkit dashboard 
+    });
 app.use(apitoolkit.expressMiddleware);
 
 app.get('/', (req, res) => {
@@ -151,3 +153,70 @@ app.listen(3000, () => {
 ```
 
 By executing this procedure, APIToolkit gains access to non-redacted fields and files, thereby enhancing the precision of monitoring and documentation processes. This method ensures that all necessary data is accessible and correctly relayed to APIToolkit for thorough analysis and documentation.
+
+## Using apitoolkit to observe an axios based outgoing request 
+
+Simply wrap your axios instance with the APIToolkit observeAvios function.
+
+``` typescript
+import {observeAxios} from 'apitoolkit/axios';
+
+const response = await observeAxios(axios).get(`${baseURL}/user_list/active`);
+```
+
+If you're making requests to endpoints which have variable urlPaths, you should include a wildcard url of the path, so that apitoolkit groups the endpoints correctly for you on the dashboardL:
+
+``` typescript
+import {observeAxios} from 'apitoolkit/axios';
+
+const response = await observeAxios(axios,'/users/{user_id}').get(`${baseURL}/users/user1234`);
+```
+
+There are other optional arguments you could pass on to the observeAxios function, eg:
+
+``` typescript
+import {observeAxios} from 'apitoolkit/axios';
+
+const redactHeadersList = ["Content-Type", "Authorization"]
+const redactRequestBodyList = ["$.body.bla.bla"]
+const redactResponseBodyList = undefined
+const response = await observeAxios(axios,'/users/{user_id}', redactHeadersList, redactRequestBodyList, redactResponseBodyList).get(`${baseURL}/users/user1234`);
+```
+
+Note that you can ignore any of these arguments except the first argument which is the axios instance to observe.
+For the other arguments, you can either skip them if at the end, or use undefined as a placeholder.
+
+
+## Reporting errors to APIToolkit 
+
+APIToolkit detects a lot of API issues automatically, but it's also valuable to report and track errors. This helps you associate more details about the backend with a given failing request.
+If you've used sentry, or rollback, or bugsnag, then you're likely aware of this functionality.
+
+Within the context of a web request, reporting error is as simple as calling the apitoolkit ReportError function. 
+
+```typescript 
+import {ReportError} from 'apitoolkit';
+
+try {
+    const response = await observeAxios(axios).get(`${baseURL}/ping`);
+} catch(error){
+    ReportError(error)
+}
+```
+
+This works automatically from within a web request which is wrapped by the apitoolkit middleware. But if called from a background job, ReportError will not know how to actually Report the Error. 
+In that case, you can call ReportError, but on the apitoolkit client, instead.
+
+```js
+import APIToolkit from 'apitoolkit-express';
+
+const apitoolkitClient = await APIToolkit.NewClient({ apiKey: '<API-KEY>' });
+
+
+try {
+    const response = await observeAxios(axios).get(`${baseURL}/ping`);
+} catch(error){
+    apitoolkitClient.ReportError(error)
+}
+
+```
