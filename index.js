@@ -92,7 +92,7 @@ class APIToolkit {
                 console.log("APIToolkit: expressMiddleware called");
             }
             const start_time = process.hrtime.bigint();
-            let respBody = null;
+            let respBody = "";
             const oldSend = res.send;
             res.send = (val) => {
                 respBody = val;
