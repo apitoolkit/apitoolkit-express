@@ -172,6 +172,7 @@ export class APIToolkit {
             console.log("APIToolkit: publish prepared payload ");
             console.dir(payload);
           }
+          console.log("published")
           this.publishMessage(payload);
         };
 
@@ -183,7 +184,6 @@ export class APIToolkit {
       try {
         next();
       } catch (error) {
-        console.log(error);
         next(error);
       }
     });

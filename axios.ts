@@ -31,46 +31,45 @@ export const onResponse =
     redactRequestBody: string[],
     redactResponseBody: string[]
   ) =>
-  (response: AxiosResponse): AxiosResponse => {
-    if (asyncLocalStorage.getStore() == null) {
-      console.log(
-        "APIToolkit: observeAxios used outside of the APIToolkit middleware's scope. Use the APIToolkitClient.observeAxios instead, if you're not in a web context."
+    (response: AxiosResponse): AxiosResponse => {
+      if (asyncLocalStorage.getStore() == null) {
+        console.log(
+          "APIToolkit: observeAxios used outside of the APIToolkit middleware's scope. Use the APIToolkitClient.observeAxios instead, if you're not in a web context."
+        );
+        return response;
+      }
+      const req = response.config;
+      const res = response;
+
+      const reqBody = JSON.stringify(req.data || {});
+      const respBody = JSON.stringify(res.data || {});
+      const project_id = asyncLocalStorage.getStore()!.get("AT_project_id");
+      const ATClient = asyncLocalStorage.getStore()!.get("AT_client");
+      const ATConfig: Config = asyncLocalStorage.getStore()!.get("AT_config");
+      const parent_id: string = asyncLocalStorage.getStore()!.get("AT_msg_id");
+
+      var errors: ATError[] = [];
+
+      const payload = buildPayload(
+        response.config.meta.startTime,
+        req,
+        res,
+        reqBody,
+        respBody,
+        redactRequestBody,
+        redactResponseBody,
+        redactHeaderLists,
+        project_id,
+        ATConfig.serviceVersion,
+        errors,
+        ATConfig.tags ?? [],
+        parent_id,
+        urlWildcard
       );
+
+      ATClient.publishMessage(payload);
       return response;
-    }
-    const req = response.config;
-    const res = response;
-
-    const reqBody = JSON.stringify(req.data || {});
-    const respBody = JSON.stringify(res.data || {});
-    const project_id = asyncLocalStorage.getStore()!.get("AT_project_id");
-    const ATClient = asyncLocalStorage.getStore()!.get("AT_client");
-    const ATConfig: Config = asyncLocalStorage.getStore()!.get("AT_config");
-    const parent_id: string = asyncLocalStorage.getStore()!.get("AT_msg_id");
-
-    var errors: ATError[] = [];
-
-    const payload = buildPayload(
-      response.config.meta.startTime,
-      req,
-      res,
-      reqBody,
-      respBody,
-      redactRequestBody,
-      redactResponseBody,
-      redactHeaderLists,
-      project_id,
-      ATConfig.serviceVersion,
-      errors,
-      ATConfig.tags ?? [],
-      parent_id,
-      urlWildcard
-    );
-
-    console.log("paylaod", payload);
-
-    return response;
-  };
+    };
 
 export const onResponseError =
   (
@@ -79,49 +78,47 @@ export const onResponseError =
     redactRequestBody: string[],
     redactResponseBody: string[]
   ) =>
-  (error: AxiosError): Promise<AxiosError> => {
-    if (asyncLocalStorage.getStore() == null) {
-      console.log(
-        "APIToolkit: observeAxios used outside of the APIToolkit middleware's scope. Use the APIToolkitClient.observeAxios instead, if you're not in a web context."
+    (error: AxiosError): Promise<AxiosError> => {
+      if (asyncLocalStorage.getStore() == null) {
+        console.log(
+          "APIToolkit: observeAxios used outside of the APIToolkit middleware's scope. Use the APIToolkitClient.observeAxios instead, if you're not in a web context."
+        );
+        return Promise.reject(error);
+      }
+
+      const req = error.config;
+      const res = error.response;
+
+      const reqBody = JSON.stringify(req?.data || {});
+      const respBody = JSON.stringify(res?.data || {});
+      const project_id = asyncLocalStorage.getStore()!.get("AT_project_id");
+      const ATClient: APIToolkit = asyncLocalStorage.getStore()!.get("AT_client");
+      const ATConfig: Config = asyncLocalStorage.getStore()!.get("AT_config");
+      const parent_id: string = asyncLocalStorage.getStore()!.get("AT_msg_id");
+
+      var errors: ATError[] = [];
+
+      const payload = buildPayload(
+        error.config?.meta.startTime ?? process.hrtime.bigint(),
+        error.request,
+        res,
+        reqBody,
+        respBody,
+        redactRequestBody,
+        redactResponseBody,
+        redactHeaderLists,
+        project_id,
+        ATConfig.serviceVersion,
+        errors,
+        ATConfig.tags ?? [],
+        parent_id,
+        urlWildcard
       );
+
+      ATClient.publishMessage(payload);
+
       return Promise.reject(error);
-    }
-
-    const req = error.config;
-    const res = error.response;
-
-    const reqBody = JSON.stringify(req?.data || {});
-    const respBody = JSON.stringify(res?.data || {});
-    const project_id = asyncLocalStorage.getStore()!.get("AT_project_id");
-    const ATClient: APIToolkit = asyncLocalStorage.getStore()!.get("AT_client");
-    const ATConfig: Config = asyncLocalStorage.getStore()!.get("AT_config");
-    const parent_id: string = asyncLocalStorage.getStore()!.get("AT_msg_id");
-
-    var errors: ATError[] = [];
-
-    const payload = buildPayload(
-      error.config?.meta.startTime ?? process.hrtime.bigint(),
-      error.request,
-      res,
-      reqBody,
-      respBody,
-      redactRequestBody,
-      redactResponseBody,
-      redactHeaderLists,
-      project_id,
-      ATConfig.serviceVersion,
-      errors,
-      ATConfig.tags ?? [],
-      parent_id,
-      urlWildcard
-    );
-
-    ATClient.publishMessage(payload);
-
-    console.log("paylaod", payload);
-
-    return Promise.reject(error);
-  };
+    };
 
 export function observeAxios(
   axiosInstance: AxiosInstance,
@@ -163,14 +160,12 @@ export function buildPayload(
     ([k, v]: [string, any]): [string, string[]] => [k, Array.isArray(v) ? v : [v]]
   );
   const resHeaders = new Map<string, string[]>(resObjEntries);
-
-  const queryObjEntries = Object.entries(req.params || {}).map(([k, v]) => {
+  const { path: urlPath, rawUrl, queryParams: params } = getPathAndQueryParamsFromURL(req.url ?? "");
+  const queryObjEntries = Object.entries(req.params || params).map(([k, v]) => {
     if (typeof v === "string") return [k, [v]];
     return [k, v];
   });
   const queryParams = Object.fromEntries(queryObjEntries);
-
-  const urlPath = req.url ?? "";
   const payload: Payload = {
     duration: Number(process.hrtime.bigint() - start_time),
     host: req.baseURL ?? "", // AxiosRequestConfig does not have a hostname property, using baseURL as a substitute
@@ -180,7 +175,7 @@ export function buildPayload(
     proto_minor: 1, // Update as needed
     proto_major: 1, // Update as needed
     query_params: queryParams,
-    raw_url: urlPath,
+    raw_url: rawUrl,
     referer: req.headers?.referer ?? "",
     request_body: Buffer.from(redactFields(reqBody, redactRequestBody)).toString("base64"),
     request_headers: redactHeaders(reqHeaders, redactHeaderLists),
@@ -195,6 +190,23 @@ export function buildPayload(
     tags: tags,
     parent_id: parent_id,
   };
-
   return payload;
+}
+
+
+function getPathAndQueryParamsFromURL(url: string) {
+  try {
+    const urlObject = new URL(url);
+    const path = urlObject.pathname;
+    const queryParams: { [key: string]: string } = {};
+    const queryParamsString = urlObject.search;
+    console.log(queryParamsString);
+    urlObject.searchParams.forEach((value, key) => {
+      queryParams[key] = value;
+    });
+
+    return { path, queryParams, rawUrl: path + queryParamsString };
+  } catch (error) {
+    return { path: "", queryParams: {}, rawUrl: "" };
+  }
 }

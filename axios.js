@@ -28,7 +28,7 @@ const onResponse = (urlWildcard, redactHeaderLists, redactRequestBody, redactRes
     const parent_id = index_1.asyncLocalStorage.getStore().get("AT_msg_id");
     var errors = [];
     const payload = buildPayload(response.config.meta.startTime, req, res, reqBody, respBody, redactRequestBody, redactResponseBody, redactHeaderLists, project_id, ATConfig.serviceVersion, errors, ATConfig.tags ?? [], parent_id, urlWildcard);
-    console.log("paylaod", payload);
+    ATClient.publishMessage(payload);
     return response;
 };
 exports.onResponse = onResponse;
@@ -48,7 +48,6 @@ const onResponseError = (urlWildcard, redactHeaderLists, redactRequestBody, reda
     var errors = [];
     const payload = buildPayload(error.config?.meta.startTime ?? process.hrtime.bigint(), error.request, res, reqBody, respBody, redactRequestBody, redactResponseBody, redactHeaderLists, project_id, ATConfig.serviceVersion, errors, ATConfig.tags ?? [], parent_id, urlWildcard);
     ATClient.publishMessage(payload);
-    console.log("paylaod", payload);
     return Promise.reject(error);
 };
 exports.onResponseError = onResponseError;
@@ -63,13 +62,13 @@ function buildPayload(start_time, req, res, reqBody, respBody, redactRequestBody
     const reqHeaders = new Map(reqObjEntries);
     const resObjEntries = Object.entries(res?.headers ?? []).map(([k, v]) => [k, Array.isArray(v) ? v : [v]]);
     const resHeaders = new Map(resObjEntries);
-    const queryObjEntries = Object.entries(req.params || {}).map(([k, v]) => {
+    const { path: urlPath, rawUrl, queryParams: params } = getPathAndQueryParamsFromURL(req.url ?? "");
+    const queryObjEntries = Object.entries(req.params || params).map(([k, v]) => {
         if (typeof v === "string")
             return [k, [v]];
         return [k, v];
     });
     const queryParams = Object.fromEntries(queryObjEntries);
-    const urlPath = req.url ?? "";
     const payload = {
         duration: Number(process.hrtime.bigint() - start_time),
         host: req.baseURL ?? "",
@@ -79,7 +78,7 @@ function buildPayload(start_time, req, res, reqBody, respBody, redactRequestBody
         proto_minor: 1,
         proto_major: 1,
         query_params: queryParams,
-        raw_url: urlPath,
+        raw_url: rawUrl,
         referer: req.headers?.referer ?? "",
         request_body: Buffer.from((0, payload_1.redactFields)(reqBody, redactRequestBody)).toString("base64"),
         request_headers: (0, payload_1.redactHeaders)(reqHeaders, redactHeaderLists),
@@ -97,3 +96,19 @@ function buildPayload(start_time, req, res, reqBody, respBody, redactRequestBody
     return payload;
 }
 exports.buildPayload = buildPayload;
+function getPathAndQueryParamsFromURL(url) {
+    try {
+        const urlObject = new URL(url);
+        const path = urlObject.pathname;
+        const queryParams = {};
+        const queryParamsString = urlObject.search;
+        console.log(queryParamsString);
+        urlObject.searchParams.forEach((value, key) => {
+            queryParams[key] = value;
+        });
+        return { path, queryParams, rawUrl: path + queryParamsString };
+    }
+    catch (error) {
+        return { path: "", queryParams: {}, rawUrl: "" };
+    }
+}
