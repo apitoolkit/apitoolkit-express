@@ -27,9 +27,9 @@ export type Payload = {
   raw_url: string;
   referer: string;
   request_body: string;
-  request_headers: Map<string, string[]>;
+  request_headers: Object;
   response_body: string;
-  response_headers: Map<string, string[]>;
+  response_headers: Object;
   sdk_type: string;
   status_code: number;
   timestamp: string;
@@ -61,11 +61,14 @@ export function buildPayload(
     ([k, v]: [string, any]): [string, string[]] => [k, Array.isArray(v) ? v : [v]]
   );
   const reqHeaders = new Map<string, string[]>(reqObjEntries);
+  console.log("req", req.headers, reqHeaders)
 
   const resObjEntries: Array<[string, string[]]> = Object.entries(res.getHeaders()).map(
     ([k, v]: [string, any]): [string, string[]] => [k, Array.isArray(v) ? v : [v]]
   );
   const resHeaders = new Map<string, string[]>(resObjEntries);
+  console.log("res", res.getHeaders, resHeaders)
+
 
   const queryObjEntries = Object.entries(req.query).map(([k, v]) => {
     if (typeof v === "string") return [k, [v]];
@@ -102,18 +105,18 @@ export function buildPayload(
     service_version,
     tags, msg_id, parent_id,
   };
-
+  console.log(payload)
   return payload;
 }
 
 export function redactHeaders(headers: Map<string, string[]>, headersToRedact: string[]) {
-  const redactedHeaders: Map<string, string[]> = new Map();
+  const redactedHeaders: { [key: string]: string[] } = {};
   const headersToRedactLowerCase = headersToRedact.map((header) => header.toLowerCase());
 
   for (let [key, value] of headers) {
     const lowerKey = key.toLowerCase();
     const isRedactKey = headersToRedactLowerCase.includes(lowerKey) || lowerKey === "cookie";
-    redactedHeaders.set(key, isRedactKey ? ["[CLIENT_REDACTED]"] : value);
+    redactedHeaders[key] = isRedactKey ? ["[CLIENT_REDACTED]"] : value;
   }
 
   return redactedHeaders;

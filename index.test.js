@@ -58,14 +58,14 @@ describe("Express SDK API Tests", () => {
             expect(payload.path_params).toMatchObject({ slug: "slug-value" });
             expect(payload.status_code).toBe(200);
             expect(payload.sdk_type).toBe("JsExpress");
-            expect(Object.fromEntries(payload.request_headers)).toMatchObject({
+            expect(payload.request_headers).toMatchObject({
                 "accept-encoding": ["gzip, deflate"],
                 connection: ["close"],
                 "content-length": ["437"],
                 "content-type": ["application/json"],
                 "x-api-key": ["past-3"],
             });
-            expect(Object.fromEntries(payload.response_headers)).toMatchObject({
+            expect(payload.response_headers).toMatchObject({
                 "content-type": ["application/json; charset=utf-8"],
                 "x-secret": ["[CLIENT_REDACTED]"],
                 "x-api-key": ["applicationKey"],
@@ -408,9 +408,9 @@ describe("testing headers and jsonpath redaction", () => {
         ]);
         const headersToRedact = ["Authorization", "content-type"];
         const redactedHeaders = (0, payload_1.redactHeaders)(headers, headersToRedact);
-        expect(redactedHeaders.get("Authorization")).toEqual(["[CLIENT_REDACTED]"]);
-        expect(redactedHeaders.get("Content-Type")).toEqual(["[CLIENT_REDACTED]"]);
-        expect(redactedHeaders.get("User-Agent")).toEqual(["MyApp"]);
+        expect(redactedHeaders["Authorization"]).toEqual(["[CLIENT_REDACTED]"]);
+        expect(redactedHeaders["Content-Type"]).toEqual(["[CLIENT_REDACTED]"]);
+        expect(redactedHeaders["User-Agent"]).toEqual(["MyApp"]);
     });
     it("should redact fields correctly", () => {
         const body = '{"user": {"name": "John", "email": "john@example.com", "books": [{"title": "Book 1", "author": "Author 1"},{"title": "Book 2", "author": "Author 2"}]}}';

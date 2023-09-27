@@ -1,4 +1,4 @@
-import { Payload, redactFields, redactHeaders} from "./payload";
+import { Payload, redactFields, redactHeaders } from "./payload";
 import APIToolkit from "./index";
 import { PubSub } from "@google-cloud/pubsub";
 import request from "supertest";
@@ -32,7 +32,7 @@ describe("Express SDK API Tests", () => {
       expect(payload.path_params).toMatchObject({ slug: "slug-value" });
       expect(payload.status_code).toBe(200);
       expect(payload.sdk_type).toBe("JsExpress");
-      expect(Object.fromEntries(payload.request_headers)).toMatchObject({
+      expect(payload.request_headers).toMatchObject({
         "accept-encoding": ["gzip, deflate"],
         connection: ["close"],
         "content-length": ["437"],
@@ -40,7 +40,7 @@ describe("Express SDK API Tests", () => {
         "x-api-key": ["past-3"],
       });
 
-      expect(Object.fromEntries(payload.response_headers)).toMatchObject({
+      expect(payload.response_headers).toMatchObject({
         "content-type": ["application/json; charset=utf-8"],
         "x-secret": ["[CLIENT_REDACTED]"],
         "x-api-key": ["applicationKey"],
@@ -419,7 +419,7 @@ describe("testing headers and jsonpath redaction", () => {
     const pubsub = new PubSub({
       projectId: "pubsub_project_id",
     });
-    myClassInstance = new APIToolkit(pubsub, "topic_id", "project_id", {apiKey: "", debug:true});
+    myClassInstance = new APIToolkit(pubsub, "topic_id", "project_id", { apiKey: "", debug: true });
   });
 
   it("should redact headers correctly", () => {
@@ -433,9 +433,9 @@ describe("testing headers and jsonpath redaction", () => {
 
     const redactedHeaders = redactHeaders(headers, headersToRedact);
 
-    expect(redactedHeaders.get("Authorization")).toEqual(["[CLIENT_REDACTED]"]);
-    expect(redactedHeaders.get("Content-Type")).toEqual(["[CLIENT_REDACTED]"]);
-    expect(redactedHeaders.get("User-Agent")).toEqual(["MyApp"]);
+    expect(redactedHeaders["Authorization"]).toEqual(["[CLIENT_REDACTED]"]);
+    expect(redactedHeaders["Content-Type"]).toEqual(["[CLIENT_REDACTED]"]);
+    expect(redactedHeaders["User-Agent"]).toEqual(["MyApp"]);
   });
 
   it("should redact fields correctly", () => {

@@ -134,7 +134,6 @@ class APIToolkit {
                     console.log("APIToolkit: publish prepared payload ");
                     console.dir(payload);
                 }
-                console.log("published");
                 this.publishMessage(payload);
             };
             const onRespFinishedCB = onRespFinished(__classPrivateFieldGet(this, _APIToolkit_pubsub, "f")?.topic(__classPrivateFieldGet(this, _APIToolkit_topic, "f")), req, res);

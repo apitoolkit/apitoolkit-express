@@ -200,7 +200,6 @@ function getPathAndQueryParamsFromURL(url: string) {
     const path = urlObject.pathname;
     const queryParams: { [key: string]: string } = {};
     const queryParamsString = urlObject.search;
-    console.log(queryParamsString);
     urlObject.searchParams.forEach((value, key) => {
       queryParams[key] = value;
     });

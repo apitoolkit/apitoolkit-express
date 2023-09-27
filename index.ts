@@ -172,7 +172,6 @@ export class APIToolkit {
             console.log("APIToolkit: publish prepared payload ");
             console.dir(payload);
           }
-          console.log("published")
           this.publishMessage(payload);
         };
 
