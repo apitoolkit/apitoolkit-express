@@ -61,13 +61,11 @@ export function buildPayload(
     ([k, v]: [string, any]): [string, string[]] => [k, Array.isArray(v) ? v : [v]]
   );
   const reqHeaders = new Map<string, string[]>(reqObjEntries);
-  console.log("req", req.headers, reqHeaders)
 
   const resObjEntries: Array<[string, string[]]> = Object.entries(res.getHeaders()).map(
     ([k, v]: [string, any]): [string, string[]] => [k, Array.isArray(v) ? v : [v]]
   );
   const resHeaders = new Map<string, string[]>(resObjEntries);
-  console.log("res", res.getHeaders, resHeaders)
 
 
   const queryObjEntries = Object.entries(req.query).map(([k, v]) => {
@@ -105,7 +103,6 @@ export function buildPayload(
     service_version,
     tags, msg_id, parent_id,
   };
-  console.log(payload)
   return payload;
 }
 
