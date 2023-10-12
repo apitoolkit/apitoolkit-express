@@ -8,10 +8,8 @@ const jsonpath_1 = __importDefault(require("jsonpath"));
 function buildPayload(start_time, req, res, reqBody, respBody, redactRequestBody, redactResponseBody, redactHeaderLists, project_id, errors, service_version, tags, msg_id, parent_id) {
     const reqObjEntries = Object.entries(req.headers).map(([k, v]) => [k, Array.isArray(v) ? v : [v]]);
     const reqHeaders = new Map(reqObjEntries);
-    console.log("req", req.headers, reqHeaders);
     const resObjEntries = Object.entries(res.getHeaders()).map(([k, v]) => [k, Array.isArray(v) ? v : [v]]);
     const resHeaders = new Map(resObjEntries);
-    console.log("res", res.getHeaders, resHeaders);
     const queryObjEntries = Object.entries(req.query).map(([k, v]) => {
         if (typeof v === "string")
             return [k, [v]];
@@ -46,7 +44,6 @@ function buildPayload(start_time, req, res, reqBody, respBody, redactRequestBody
         service_version,
         tags, msg_id, parent_id,
     };
-    console.log(payload);
     return payload;
 }
 exports.buildPayload = buildPayload;
