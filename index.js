@@ -13,7 +13,7 @@ var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-var _APIToolkit_topic, _APIToolkit_pubsub, _APIToolkit_project_id, _APIToolkit_config;
+var _APIToolkit_topicName, _APIToolkit_topic, _APIToolkit_pubsub, _APIToolkit_project_id, _APIToolkit_config;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ReportError = exports.APIToolkit = exports.asyncLocalStorage = void 0;
 const node_fetch_1 = __importDefault(require("node-fetch"));
@@ -23,27 +23,36 @@ const payload_1 = require("./payload");
 const uuid_1 = require("uuid");
 exports.asyncLocalStorage = new async_hooks_1.AsyncLocalStorage();
 class APIToolkit {
-    constructor(pubsub, topic, project_id, config) {
+    constructor(pubsub, topicName, project_id, config) {
+        _APIToolkit_topicName.set(this, void 0);
         _APIToolkit_topic.set(this, void 0);
         _APIToolkit_pubsub.set(this, void 0);
         _APIToolkit_project_id.set(this, void 0);
         _APIToolkit_config.set(this, void 0);
-        __classPrivateFieldSet(this, _APIToolkit_topic, topic, "f");
+        __classPrivateFieldSet(this, _APIToolkit_topicName, topicName, "f");
         __classPrivateFieldSet(this, _APIToolkit_pubsub, pubsub, "f");
         __classPrivateFieldSet(this, _APIToolkit_project_id, project_id, "f");
         __classPrivateFieldSet(this, _APIToolkit_config, config, "f");
+        if (__classPrivateFieldGet(this, _APIToolkit_pubsub, "f")) {
+            __classPrivateFieldSet(this, _APIToolkit_topic, __classPrivateFieldGet(this, _APIToolkit_pubsub, "f").topic(__classPrivateFieldGet(this, _APIToolkit_topicName, "f")), "f");
+        }
         this.publishMessage = (payload) => {
             const callback = (err, messageId) => {
                 if (__classPrivateFieldGet(this, _APIToolkit_config, "f").debug) {
                     console.log("APIToolkit: pubsub publish callback called; messageId: ", messageId, " error ", err);
-                    if (err) {
-                        console.log("APIToolkit: error publishing message to pubsub");
-                        console.error(err);
-                    }
+                }
+                if (err) {
+                    console.log("APIToolkit: error publishing message to pubsub");
+                    console.error(err);
                 }
             };
-            if (__classPrivateFieldGet(this, _APIToolkit_pubsub, "f")) {
-                __classPrivateFieldGet(this, _APIToolkit_pubsub, "f").topic(__classPrivateFieldGet(this, _APIToolkit_topic, "f")).publishMessage({ json: payload }, callback);
+            if (__classPrivateFieldGet(this, _APIToolkit_topic, "f")) {
+                __classPrivateFieldGet(this, _APIToolkit_topic, "f").publishMessage({ json: payload }, callback);
+            }
+            else {
+                if (__classPrivateFieldGet(this, _APIToolkit_config, "f").debug) {
+                    console.error("APIToolkit: error publishing message to pubsub, Undefined topic");
+                }
             }
         };
         this.expressMiddleware = this.expressMiddleware.bind(this);
@@ -77,9 +86,6 @@ class APIToolkit {
             throw new Error(`Error getting apitoolkit client_metadata ${resp.status}`);
         return (await resp.json());
     }
-    // public getStore() {
-    //   return this.asyncLocalStorage.getStore();
-    // }
     async expressMiddleware(req, res, next) {
         exports.asyncLocalStorage.run(new Map(), () => {
             exports.asyncLocalStorage.getStore().set("AT_client", this);
@@ -136,7 +142,7 @@ class APIToolkit {
                 }
                 this.publishMessage(payload);
             };
-            const onRespFinishedCB = onRespFinished(__classPrivateFieldGet(this, _APIToolkit_pubsub, "f")?.topic(__classPrivateFieldGet(this, _APIToolkit_topic, "f")), req, res);
+            const onRespFinishedCB = onRespFinished(__classPrivateFieldGet(this, _APIToolkit_topic, "f"), req, res);
             res.on("finish", onRespFinishedCB);
             res.on("error", onRespFinishedCB);
             // res.on('close', onRespFinishedCB)
@@ -150,7 +156,7 @@ class APIToolkit {
     }
 }
 exports.APIToolkit = APIToolkit;
-_APIToolkit_topic = new WeakMap(), _APIToolkit_pubsub = new WeakMap(), _APIToolkit_project_id = new WeakMap(), _APIToolkit_config = new WeakMap();
+_APIToolkit_topicName = new WeakMap(), _APIToolkit_topic = new WeakMap(), _APIToolkit_pubsub = new WeakMap(), _APIToolkit_project_id = new WeakMap(), _APIToolkit_config = new WeakMap();
 function ReportError(error) {
     if (exports.asyncLocalStorage.getStore() == null) {
         console.log("APIToolkit: ReportError used outside of the APIToolkit middleware's scope. Use the APIToolkitClient.ReportError instead, if you're not in a web context.");

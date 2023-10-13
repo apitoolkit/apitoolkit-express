@@ -1,6 +1,6 @@
 import { Payload } from "./payload";
 import { APIKEY, EmptyClientMetadata } from "./index.test";
-import APIToolkit, {ReportError} from "./index";
+import APIToolkit, { ReportError } from "./index";
 import request from "supertest";
 import express, { Request, Response } from "express";
 import axios, { AxiosResponse } from "axios";
@@ -33,7 +33,11 @@ describe("Axios Interceptors", () => {
       redactHeaders: redactHeadersVar,
       clientMetadata: EmptyClientMetadata,
     });
+    const oldPublishMsg = client.publishMessage;
     client.publishMessage = (payload: Payload) => {
+      if (APIKEY != "") {
+        oldPublishMsg(payload);
+      }
       published = true;
       console.dir(payload);
     };
@@ -66,10 +70,14 @@ describe("Axios Interceptors", () => {
     const redactHeadersVar = ["Authorization", "X-SECRET"];
     const client = await APIToolkit.NewClient({
       apiKey: APIKEY,
-      redactHeaders:redactHeadersVar,
+      redactHeaders: redactHeadersVar,
       clientMetadata: EmptyClientMetadata,
     });
+    const oldPublishMsg = client.publishMessage;
     client.publishMessage = (payload: Payload) => {
+      if (APIKEY != "") {
+        oldPublishMsg(payload);
+      }
       published = true;
       console.dir(payload);
     };
@@ -81,11 +89,17 @@ describe("Axios Interceptors", () => {
     });
     app.get("/:slug/test", async (req: Request, res: Response) => {
       try {
-        const response: AxiosResponse = await observeAxios(axios, '/test/{username}', undefined, undefined, undefined).get(`${baseURL}/pingxwrong`);
+        const response: AxiosResponse = await observeAxios(
+          axios,
+          "/test/{username}",
+          undefined,
+          undefined,
+          undefined
+        ).get(`${baseURL}/pingxwrong`);
         res.json(response.data);
       } catch (err) {
-        ReportError(err)
-        res.json({"hello":"error"})
+        ReportError(err);
+        res.json({ hello: "error" });
       }
     });
 

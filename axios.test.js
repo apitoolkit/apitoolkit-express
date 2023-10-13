@@ -56,7 +56,11 @@ describe("Axios Interceptors", () => {
             redactHeaders: redactHeadersVar,
             clientMetadata: index_test_1.EmptyClientMetadata,
         });
+        const oldPublishMsg = client.publishMessage;
         client.publishMessage = (payload) => {
+            if (index_test_1.APIKEY != "") {
+                oldPublishMsg(payload);
+            }
             published = true;
             console.dir(payload);
         };
@@ -88,7 +92,11 @@ describe("Axios Interceptors", () => {
             redactHeaders: redactHeadersVar,
             clientMetadata: index_test_1.EmptyClientMetadata,
         });
+        const oldPublishMsg = client.publishMessage;
         client.publishMessage = (payload) => {
+            if (index_test_1.APIKEY != "") {
+                oldPublishMsg(payload);
+            }
             published = true;
             console.dir(payload);
         };
@@ -99,12 +107,12 @@ describe("Axios Interceptors", () => {
         });
         app.get("/:slug/test", async (req, res) => {
             try {
-                const response = await (0, axios_2.observeAxios)(axios_1.default, '/test/{username}', undefined, undefined, undefined).get(`${baseURL}/pingxwrong`);
+                const response = await (0, axios_2.observeAxios)(axios_1.default, "/test/{username}", undefined, undefined, undefined).get(`${baseURL}/pingxwrong`);
                 res.json(response.data);
             }
             catch (err) {
                 (0, index_1.ReportError)(err);
-                res.json({ "hello": "error" });
+                res.json({ hello: "error" });
             }
         });
         const response = await (0, supertest_1.default)(app)

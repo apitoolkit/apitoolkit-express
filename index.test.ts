@@ -6,7 +6,7 @@ import express, { Request, Response, Router } from "express";
 import multer from "multer";
 import formidable from "formidable";
 import busboy from "busboy";
-import axios, { AxiosResponse } from 'axios';
+import axios, { AxiosResponse } from "axios";
 
 export const APIKEY = process.env["APITOOLKIT_KEY"] || "";
 export const EmptyClientMetadata = {
@@ -27,7 +27,12 @@ describe("Express SDK API Tests", () => {
       redactResponseBody: exampleDataRedaction,
       clientMetadata: EmptyClientMetadata,
     });
+    const oldPublishMsg = client.publishMessage;
     client.publishMessage = (payload: Payload) => {
+      if (APIKEY != "") {
+        oldPublishMsg(payload);
+      }
+
       expect(payload.method).toBe("POST");
       expect(payload.path_params).toMatchObject({ slug: "slug-value" });
       expect(payload.status_code).toBe(200);
@@ -84,7 +89,11 @@ describe("Express SDK API Tests", () => {
       redactHeaders,
       clientMetadata: EmptyClientMetadata,
     });
+    const oldPublishMsg = client.publishMessage;
     client.publishMessage = (payload: Payload) => {
+      if (APIKEY != "") {
+        oldPublishMsg(payload);
+      }
       expect(payload.method).toBe("GET");
       expect(payload.path_params).toMatchObject({ slug: "slug-value" });
       expect(payload.query_params).toMatchObject({ param1: ["abc"], param2: ["123"] });
@@ -128,7 +137,12 @@ describe("Express SDK API Tests", () => {
       redactHeaders,
       clientMetadata: EmptyClientMetadata,
     });
+
+    const oldPublishMsg = client.publishMessage;
     client.publishMessage = (payload: Payload) => {
+      if (APIKEY != "") {
+        oldPublishMsg(payload);
+      }
       expect(payload.sdk_type).toBe("JsExpress");
       expect(payload.url_path).toBe("/parent/:slug/test");
       expect(payload.raw_url).toBe("/parent/slug-value/test?param1=abc&param2=123");
@@ -164,7 +178,11 @@ describe("Express SDK API Tests", () => {
       redactHeaders,
       clientMetadata: EmptyClientMetadata,
     });
+    const oldPublishMsg = client.publishMessage;
     client.publishMessage = (payload: Payload) => {
+      if (APIKEY != "") {
+        oldPublishMsg(payload);
+      }
       expect(payload.sdk_type).toBe("JsExpress");
       expect(payload.url_path).toBe("/parent/parent2/parent3/:slug/test");
       expect(payload.raw_url).toBe("/parent/parent2/parent3/slug-value/test?param1=abc&param2=123");
@@ -203,7 +221,11 @@ describe("Express SDK API Tests", () => {
       apiKey: APIKEY,
       clientMetadata: EmptyClientMetadata,
     });
+    const oldPublishMsg = client.publishMessage;
     client.publishMessage = (payload: Payload) => {
+      if (APIKEY != "") {
+        oldPublishMsg(payload);
+      }
       expect(payload.method).toBe("OPTIONS");
       expect(payload.status_code).toBe(200);
       expect(payload.sdk_type).toBe("JsExpress");
@@ -241,7 +263,11 @@ describe("File Upload Endpoint", () => {
       apiKey: APIKEY,
       clientMetadata: EmptyClientMetadata,
     });
+    const oldPublishMsg = client.publishMessage;
     client.publishMessage = (payload: Payload) => {
+      if (APIKEY != "") {
+        oldPublishMsg(payload);
+      }
       expect(payload.method).toBe("POST");
       expect(payload.status_code).toBe(200);
       expect(payload.request_body).toBe(
@@ -308,7 +334,11 @@ describe("File Upload Endpoint", () => {
       apiKey: APIKEY,
       clientMetadata: EmptyClientMetadata,
     });
+    const oldPublishMsg = client.publishMessage;
     client.publishMessage = (payload: Payload) => {
+      if (APIKEY != "") {
+        oldPublishMsg(payload);
+      }
       expect(payload.method).toBe("POST");
       expect(payload.status_code).toBe(200);
       expect(payload.sdk_type).toBe("JsExpress");
@@ -358,7 +388,11 @@ describe("File Upload Endpoint", () => {
       apiKey: APIKEY,
       clientMetadata: EmptyClientMetadata,
     });
+    const oldPublishMsg = client.publishMessage;
     client.publishMessage = (payload: Payload) => {
+      if (APIKEY != "") {
+        oldPublishMsg(payload);
+      }
       expect(payload.method).toBe("POST");
       expect(payload.status_code).toBe(200);
       expect(payload.sdk_type).toBe("JsExpress");

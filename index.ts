@@ -27,17 +27,22 @@ type ClientMetadata = {
 export const asyncLocalStorage = new AsyncLocalStorage<Map<string, any>>();
 
 export class APIToolkit {
-  #topic: string;
+  #topicName: string;
+  #topic: Topic | undefined;
   #pubsub: PubSub | undefined;
   #project_id: string;
   #config: Config;
   publishMessage: (payload: Payload) => void;
 
-  constructor(pubsub: PubSub | undefined, topic: string, project_id: string, config: Config) {
-    this.#topic = topic;
+  constructor(pubsub: PubSub | undefined, topicName: string, project_id: string, config: Config) {
+    this.#topicName = topicName;
     this.#pubsub = pubsub;
     this.#project_id = project_id;
     this.#config = config;
+    if (this.#pubsub) {
+      this.#topic = this.#pubsub.topic(this.#topicName);
+    }
+
     this.publishMessage = (payload: Payload) => {
       const callback = (err: any, messageId: any) => {
         if (this.#config.debug) {
@@ -47,14 +52,18 @@ export class APIToolkit {
             " error ",
             err
           );
-          if (err) {
-            console.log("APIToolkit: error publishing message to pubsub");
-            console.error(err);
-          }
+        }
+        if (err) {
+          console.log("APIToolkit: error publishing message to pubsub");
+          console.error(err);
         }
       };
-      if (this.#pubsub) {
-        this.#pubsub.topic(this.#topic).publishMessage({ json: payload }, callback);
+      if (this.#topic) {
+        this.#topic.publishMessage({ json: payload }, callback);
+      } else {
+        if (this.#config.debug) {
+          console.error("APIToolkit: error publishing message to pubsub, Undefined topic");
+        }
       }
     };
     this.expressMiddleware = this.expressMiddleware.bind(this);
@@ -92,10 +101,6 @@ export class APIToolkit {
     if (!resp.ok) throw new Error(`Error getting apitoolkit client_metadata ${resp.status}`);
     return (await resp.json()) as ClientMetadata;
   }
-
-  // public getStore() {
-  //   return this.asyncLocalStorage.getStore();
-  // }
 
   public async expressMiddleware(req: Request, res: Response, next: NextFunction) {
     asyncLocalStorage.run(new Map(), () => {
@@ -175,7 +180,7 @@ export class APIToolkit {
           this.publishMessage(payload);
         };
 
-      const onRespFinishedCB = onRespFinished(this.#pubsub?.topic(this.#topic), req, res);
+      const onRespFinishedCB = onRespFinished(this.#topic, req, res);
       res.on("finish", onRespFinishedCB);
       res.on("error", onRespFinishedCB);
       // res.on('close', onRespFinishedCB)
