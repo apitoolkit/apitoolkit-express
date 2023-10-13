@@ -52,10 +52,10 @@ export class APIToolkit {
             " error ",
             err
           );
-        }
-        if (err != null && this && console) {
-          console.log("APIToolkit: error publishing message to pubsub");
-          console.error(err);
+          if (err != null) {
+            console.log("APIToolkit: error publishing message to pubsub");
+            console.error(err);
+          }
         }
       };
       if (this.#topic) {
