@@ -30,7 +30,7 @@ jobs:
         env:
           APITOOLKIT_KEY: ${{ secrets.APITOOLKIT_KEY }}
 
-      - run: yarn run build --if-present
+      - run: yarn run build 
 
       # Configure Git
       - name: Git configuration
