@@ -96,6 +96,7 @@ describe("Express SDK API Tests", () => {
         expect(response.status).toBe(200);
         expect(response.body.status).toBe("success");
         expect(published).toBe(true);
+        await client.close();
     });
     it("should get data", async () => {
         const app = (0, express_1.default)();
@@ -138,6 +139,7 @@ describe("Express SDK API Tests", () => {
         expect(response.status).toBe(200);
         expect(JSON.stringify(response.body)).toBe(JSON.stringify(exampleRequestData));
         expect(published).toBe(true);
+        await client.close();
     });
     it("should check sub routes", async () => {
         const app = (0, express_1.default)();
@@ -174,6 +176,7 @@ describe("Express SDK API Tests", () => {
         expect(response.status).toBe(200);
         expect(JSON.stringify(response.body)).toBe(JSON.stringify(exampleRequestData));
         expect(published).toBe(true);
+        await client.close();
     });
     it("should check sub sub sub routes", async () => {
         const app = (0, express_1.default)();
@@ -214,6 +217,7 @@ describe("Express SDK API Tests", () => {
         expect(response.status).toBe(200);
         expect(JSON.stringify(response.body)).toBe(JSON.stringify(exampleRequestData));
         expect(published).toBe(true);
+        await client.close();
     });
     it("should ignore path for endpoins with OPTION", async () => {
         const app = (0, express_1.default)();
@@ -250,6 +254,7 @@ describe("Express SDK API Tests", () => {
         expect(response.status).toBe(200);
         expect(response.body.message).toBe("OPTIONS ignored");
         expect(published).toBe(true);
+        await client.close();
     });
 });
 describe("File Upload Endpoint", () => {
@@ -311,6 +316,7 @@ describe("File Upload Endpoint", () => {
         expect(response.status).toBe(200);
         expect(response.body.message).toBe("File upload successful.");
         expect(published).toBe(true);
+        await client.close();
     });
     it("should upload files (formidable)", async () => {
         const app = (0, express_1.default)();
@@ -362,6 +368,7 @@ describe("File Upload Endpoint", () => {
         expect(response.status).toBe(200);
         expect(response.body.message).toBe("Uploaded successfully");
         expect(published).toBe(true);
+        await client.close();
     });
     it("should upload files (busboy)", async () => {
         const app = (0, express_1.default)();
@@ -422,6 +429,7 @@ describe("File Upload Endpoint", () => {
         expect(response.status).toBe(200);
         expect(response.body.message).toBe("Uploaded successfully");
         expect(published).toBe(true);
+        await client.close();
     });
 });
 describe("testing headers and jsonpath redaction", () => {

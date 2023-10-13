@@ -90,6 +90,11 @@ export class APIToolkit {
     return new APIToolkit(pubsubClient, topic_id, project_id, config);
   }
 
+  public async close(){
+    await this.#topic?.flush();
+    await this.#pubsub?.close();
+  }
+
   static async getClientMetadata(rootURL: string, apiKey: string) {
     const resp = await fetch(rootURL + "/api/client_metadata", {
       method: "GET",

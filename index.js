@@ -74,6 +74,10 @@ class APIToolkit {
         }
         return new APIToolkit(pubsubClient, topic_id, project_id, config);
     }
+    async close() {
+        await __classPrivateFieldGet(this, _APIToolkit_topic, "f")?.flush();
+        await __classPrivateFieldGet(this, _APIToolkit_pubsub, "f")?.close();
+    }
     static async getClientMetadata(rootURL, apiKey) {
         const resp = await (0, node_fetch_1.default)(rootURL + "/api/client_metadata", {
             method: "GET",

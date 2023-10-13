@@ -62,6 +62,8 @@ describe("Axios Interceptors", () => {
     expect(JSON.stringify(response.body)).toBe(JSON.stringify({ ping: "pong" }));
     expect(published).toBe(true);
     expect(pingCalled).toBe(true);
+
+    await client.close();
   });
 
   it("should intercept axios via responseError", async () => {
@@ -113,5 +115,7 @@ describe("Axios Interceptors", () => {
     expect(JSON.stringify(response.body)).toBe(JSON.stringify({ hello: "error" }));
     // expect(published).toBe(true)
     // expect(pingCalled).toBe(true)
+
+    await client.close();
   });
 });
