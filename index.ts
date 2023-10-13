@@ -53,7 +53,7 @@ export class APIToolkit {
             err
           );
         }
-        if (err) {
+        if (err != null && this) {
           console.log("APIToolkit: error publishing message to pubsub");
           console.error(err);
         }
@@ -90,7 +90,7 @@ export class APIToolkit {
     return new APIToolkit(pubsubClient, topic_id, project_id, config);
   }
 
-  public async close(){
+  public async close() {
     await this.#topic?.flush();
     await this.#pubsub?.close();
   }

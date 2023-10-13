@@ -41,7 +41,7 @@ class APIToolkit {
                 if (__classPrivateFieldGet(this, _APIToolkit_config, "f").debug) {
                     console.log("APIToolkit: pubsub publish callback called; messageId: ", messageId, " error ", err);
                 }
-                if (err) {
+                if (err != null && this) {
                     console.log("APIToolkit: error publishing message to pubsub");
                     console.error(err);
                 }
