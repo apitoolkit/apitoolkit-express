@@ -27,6 +27,8 @@ jobs:
       # Tests
       - name: Run tests
         run: yarn test
+        env:
+          APITOOLKIT_KEY: ${{ secrets.APITOOLKIT_KEY }}
 
       # Configure Git
       - name: Git configuration
