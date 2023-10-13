@@ -53,7 +53,7 @@ export class APIToolkit {
             err
           );
         }
-        if (err != null && this) {
+        if (err != null && this && console) {
           console.log("APIToolkit: error publishing message to pubsub");
           console.error(err);
         }
