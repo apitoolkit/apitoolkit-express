@@ -1,10 +1,10 @@
-import { Payload } from "./payload";
+import { Payload } from "../payload";
 import { APIKEY, EmptyClientMetadata } from "./index.test";
-import APIToolkit, { ReportError } from "./index";
+import APIToolkit, { ReportError } from "../index";
 import request from "supertest";
 import express, { Request, Response } from "express";
 import axios, { AxiosResponse } from "axios";
-import { observeAxios } from "./axios";
+import { observeAxios } from "../axios";
 
 describe("Axios Interceptors", () => {
   let server: any;
