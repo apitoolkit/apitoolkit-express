@@ -4,7 +4,7 @@
 
 ## APIToolkit expressjs integration.
 
-The NODEJS SDK integration guide for APIToolkit. It monitors incoming traffic, gathers the requests and sends the request to the apitoolkit servers.
+The NODEJS SDK integration guide for APIToolkit. It monitors incoming traffic, gathers the requests, and sends the request to the API toolkit servers.
 
 ### Installation
 
@@ -20,7 +20,7 @@ npm install apitoolkit-express
 Intialize apitoolkit into your project is as simple as :
 
 ```js
-import APIToolkit from 'apitoolkit-express';
+import { APIToolkit } from 'apitoolkit-express';
 
 const apitoolkitClient = await APIToolkit.NewClient({ apiKey: '<API-KEY>' });
 ```
@@ -40,9 +40,10 @@ where app is your express js instance.
 Your final could might look something like this especially on typescript:
 
 ```js
-import APIToolkit from 'apitoolkit-express';
+import { APIToolkit } from 'apitoolkit-express';
 import express from 'express';
 
+const app = express()
 const port = 3000;
 const apitoolkit = await APIToolkit.NewClient({ 
     apiKey: '<API-KEY>', // Required: API Key generated from apitoolkit dashboard 
@@ -65,8 +66,10 @@ Also notice the `.default` at the end of the require, to access the default expo
 const APIToolkit = require('apitoolkit-express').default;
 const express = require('express');
 
+const app = express()
+const port = 3000;
+
 (async function () {
-  const port = 3000;
   const apitoolkit = await APIToolkit.NewClient({ apiKey: '<API-KEY>' });
   app.use(apitoolkit.expressMiddleware);
 
@@ -90,9 +93,10 @@ To mark fields that should be redacted, simply add them to the apitoolkit config
 const APIToolkit = require('apitoolkit-express').default;
 const express = require('express');
 
+const app = express()
+const port = 3000;
+
 (async function () {
-  const app = express();
-  const port = 3000;
   const apitoolkitClient = await APIToolkit.NewClient({
     apiKey: '<API-KEY>',
     redactHeaders: ['Content-Type', 'Authorization', 'Cookies'], // Specified headers will be redacted
@@ -125,7 +129,7 @@ For instance:
 
 ```js
 import express from 'express';
-import APIToolkit from 'apitoolkit-express';
+import { APIToolkit } from 'apitoolkit-express';
 import formidable from 'formidable';
 
 const app = express();
