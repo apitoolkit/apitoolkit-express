@@ -1,5 +1,5 @@
 import { Payload, redactFields, redactHeaders } from "../payload";
-import {APIToolkit} from "../apitoolkit";
+import { APIToolkit } from "../apitoolkit";
 import { PubSub } from "@google-cloud/pubsub";
 import request from "supertest";
 import express, { Request, Response, Router } from "express";

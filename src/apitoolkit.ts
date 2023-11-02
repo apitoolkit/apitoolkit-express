@@ -1,12 +1,10 @@
+import request from "sync-request-curl";
 
-// import fetch from "node-fetch";
 import { PubSub, Topic } from "@google-cloud/pubsub";
 import { NextFunction, Request, Response } from "express";
 import { AsyncLocalStorage } from "async_hooks";
 import { ATError, Payload, buildPayload } from "./payload";
 import { v4 as uuidv4 } from "uuid";
-
-import * as request from 'sync-request-curl';
 
 
 export type Config = {
@@ -80,30 +78,27 @@ export class APIToolkit {
     this.expressMiddleware = this.expressMiddleware.bind(this);
   }
 
- 
-  
-
   public async close() {
     await this.#topic?.flush();
     await this.#pubsub?.close();
   }
 
+  static getClientMetadata(rootURL: string, apiKey: string): ClientMetadata {
+    const response = request("GET", `${rootURL}/api/client_metadata`, {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        Accept: "application/json",
+      },
+    });
 
+    if (response.statusCode !== 200) {
+      throw new Error(
+        `Error getting apitoolkit client_metadata ${response.statusCode}`,
+      );
+    }
 
-static getClientMetadata(rootURL: string, apiKey: string): ClientMetadata {
-  const response = request.default('GET', `${rootURL}/api/client_metadata`, {
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Accept': 'application/json',
-    },
-  });
-
-  if (response.statusCode !== 200) {
-    throw new Error(`Error getting apitoolkit client_metadata ${response.statusCode}`);
+    return JSON.parse(response.body as string) as ClientMetadata;
   }
-
-  return JSON.parse(response.body as string) as ClientMetadata;
-}
 
   static NewClient(config: Config): APIToolkit {
     var {
@@ -136,7 +131,6 @@ static getClientMetadata(rootURL: string, apiKey: string): ClientMetadata {
 
     return new APIToolkit(pubsubClient, topic_id, project_id, config);
   }
-
 
   public async expressMiddleware(
     req: Request,

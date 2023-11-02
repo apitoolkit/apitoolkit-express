@@ -94,7 +94,9 @@ export const onResponseError =
     const reqBody = JSON.stringify(req?.data || {});
     const respBody = JSON.stringify(res?.data || {});
     const project_id = asyncLocalStorage.getStore()!.get("AT_project_id");
-    const ATClient: APIToolkitAsync = asyncLocalStorage.getStore()!.get("AT_client");
+    const ATClient: APIToolkitAsync = asyncLocalStorage
+      .getStore()!
+      .get("AT_client");
     const ATConfig: Config = asyncLocalStorage.getStore()!.get("AT_config");
     const parent_id: string = asyncLocalStorage.getStore()!.get("AT_msg_id");
 
