@@ -6,7 +6,7 @@ import {
   InternalAxiosRequestConfig,
 } from "axios";
 import { ATError, Payload, redactFields, redactHeaders } from "./payload";
-import { APIToolkit, asyncLocalStorage, Config } from "./index";
+import { APIToolkit, asyncLocalStorage, Config } from "./apitoolkit";
 
 declare module "axios" {
   export interface InternalAxiosRequestConfig {
