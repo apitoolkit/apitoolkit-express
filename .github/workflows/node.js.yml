@@ -19,9 +19,9 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-          cache: "npm"
-      - run: npm ci
-      - run: npm run build --if-present
-      - run: npm test
+          cache: "pnpm"
+      - run: pnpm ci
+      - run: pnpm run build --if-present
+      - run: pnpm test
         env:
           APITOOLKIT_KEY: ${{ secrets.APITOOLKIT_KEY }}
