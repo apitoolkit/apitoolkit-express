@@ -48,7 +48,9 @@ describe("Axios Interceptors", () => {
       res.json({ ping: "pong" });
     });
     app.get("/:slug/test", async (req: Request, res: Response) => {
-      const response: AxiosResponse = await observeAxios(axios).get(`${baseURL}/ping`);
+      const response: AxiosResponse = await observeAxios(axios).get(
+        `${baseURL}/ping`,
+      );
       res.json(response.data);
     });
 
@@ -59,7 +61,9 @@ describe("Axios Interceptors", () => {
       .send({ data: "resp" });
 
     expect(response.status).toBe(200);
-    expect(JSON.stringify(response.body)).toBe(JSON.stringify({ ping: "pong" }));
+    expect(JSON.stringify(response.body)).toBe(
+      JSON.stringify({ ping: "pong" }),
+    );
     expect(published).toBe(true);
     expect(pingCalled).toBe(true);
 
@@ -96,7 +100,7 @@ describe("Axios Interceptors", () => {
           "/test/{username}",
           undefined,
           undefined,
-          undefined
+          undefined,
         ).get(`${baseURL}/pingxwrong`);
         res.json(response.data);
       } catch (err) {
@@ -112,7 +116,9 @@ describe("Axios Interceptors", () => {
       .send({ data: "resp" });
 
     expect(response.status).toBe(200);
-    expect(JSON.stringify(response.body)).toBe(JSON.stringify({ hello: "error" }));
+    expect(JSON.stringify(response.body)).toBe(
+      JSON.stringify({ hello: "error" }),
+    );
     // expect(published).toBe(true)
     // expect(pingCalled).toBe(true)
 

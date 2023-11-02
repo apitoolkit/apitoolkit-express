@@ -55,18 +55,23 @@ export function buildPayload(
   service_version: string | undefined,
   tags: string[],
   msg_id: string,
-  parent_id: string | undefined
+  parent_id: string | undefined,
 ): Payload {
-  const reqObjEntries: Array<[string, string[]]> = Object.entries(req.headers).map(
-    ([k, v]: [string, any]): [string, string[]] => [k, Array.isArray(v) ? v : [v]]
-  );
+  const reqObjEntries: Array<[string, string[]]> = Object.entries(
+    req.headers,
+  ).map(([k, v]: [string, any]): [string, string[]] => [
+    k,
+    Array.isArray(v) ? v : [v],
+  ]);
   const reqHeaders = new Map<string, string[]>(reqObjEntries);
 
-  const resObjEntries: Array<[string, string[]]> = Object.entries(res.getHeaders()).map(
-    ([k, v]: [string, any]): [string, string[]] => [k, Array.isArray(v) ? v : [v]]
-  );
+  const resObjEntries: Array<[string, string[]]> = Object.entries(
+    res.getHeaders(),
+  ).map(([k, v]: [string, any]): [string, string[]] => [
+    k,
+    Array.isArray(v) ? v : [v],
+  ]);
   const resHeaders = new Map<string, string[]>(resObjEntries);
-
 
   const queryObjEntries = Object.entries(req.query).map(([k, v]) => {
     if (typeof v === "string") return [k, [v]];
@@ -91,9 +96,13 @@ export function buildPayload(
     query_params: queryParams,
     raw_url: req.originalUrl,
     referer: req.headers.referer ?? "",
-    request_body: Buffer.from(redactFields(reqBody, redactRequestBody)).toString("base64"),
+    request_body: Buffer.from(
+      redactFields(reqBody, redactRequestBody),
+    ).toString("base64"),
     request_headers: redactHeaders(reqHeaders, redactHeaderLists),
-    response_body: Buffer.from(redactFields(respBody, redactResponseBody)).toString("base64"),
+    response_body: Buffer.from(
+      redactFields(respBody, redactResponseBody),
+    ).toString("base64"),
     response_headers: redactHeaders(resHeaders, redactHeaderLists),
     sdk_type: "JsExpress",
     status_code: res.statusCode,
@@ -101,18 +110,26 @@ export function buildPayload(
     url_path: urlPath,
     errors,
     service_version,
-    tags, msg_id, parent_id,
+    tags,
+    msg_id,
+    parent_id,
   };
   return payload;
 }
 
-export function redactHeaders(headers: Map<string, string[]>, headersToRedact: string[]) {
+export function redactHeaders(
+  headers: Map<string, string[]>,
+  headersToRedact: string[],
+) {
   const redactedHeaders: { [key: string]: string[] } = {};
-  const headersToRedactLowerCase = headersToRedact.map((header) => header.toLowerCase());
+  const headersToRedactLowerCase = headersToRedact.map((header) =>
+    header.toLowerCase(),
+  );
 
   for (let [key, value] of headers) {
     const lowerKey = key.toLowerCase();
-    const isRedactKey = headersToRedactLowerCase.includes(lowerKey) || lowerKey === "cookie";
+    const isRedactKey =
+      headersToRedactLowerCase.includes(lowerKey) || lowerKey === "cookie";
     redactedHeaders[key] = isRedactKey ? ["[CLIENT_REDACTED]"] : value;
   }
 

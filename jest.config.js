@@ -5,9 +5,8 @@ module.exports = {
     "^.+\\.(ts|tsx)$": "ts-jest",
     "^.+\\.(js)$": "babel-jest",
   },
-  transformIgnorePatterns: [
-  ],
-  testEnvironment: 'node',
-  testRegex: '.*\\.(test|spec)?\\.(ts|tsx)$',
-  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node']
+  transformIgnorePatterns: [],
+  testEnvironment: "node",
+  testRegex: ".*\\.(test|spec)?\\.(ts|tsx)$",
+  moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
 };

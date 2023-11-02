@@ -34,7 +34,12 @@ export class APIToolkit {
   #config: Config;
   publishMessage: (payload: Payload) => void;
 
-  constructor(pubsub: PubSub | undefined, topicName: string, project_id: string, config: Config) {
+  constructor(
+    pubsub: PubSub | undefined,
+    topicName: string,
+    project_id: string,
+    config: Config,
+  ) {
     this.#topicName = topicName;
     this.#pubsub = pubsub;
     this.#project_id = project_id;
@@ -50,7 +55,7 @@ export class APIToolkit {
             "APIToolkit: pubsub publish callback called; messageId: ",
             messageId,
             " error ",
-            err
+            err,
           );
           if (err != null) {
             console.log("APIToolkit: error publishing message to pubsub");
@@ -62,7 +67,9 @@ export class APIToolkit {
         this.#topic.publishMessage({ json: payload }, callback);
       } else {
         if (this.#config.debug) {
-          console.error("APIToolkit: error publishing message to pubsub, Undefined topic");
+          console.error(
+            "APIToolkit: error publishing message to pubsub, Undefined topic",
+          );
         }
       }
     };
@@ -70,18 +77,29 @@ export class APIToolkit {
   }
 
   static async NewClient(config: Config) {
-    var { apiKey, rootURL = "https://app.apitoolkit.io", clientMetadata } = config;
+    var {
+      apiKey,
+      rootURL = "https://app.apitoolkit.io",
+      clientMetadata,
+    } = config;
 
     var pubsubClient;
     if (clientMetadata == null || apiKey != "") {
       clientMetadata = await this.getClientMetadata(rootURL, apiKey);
       pubsubClient = new PubSub({
         projectId: clientMetadata.pubsub_project_id,
-        authClient: new PubSub().auth.fromJSON(clientMetadata.pubsub_push_service_account),
+        authClient: new PubSub().auth.fromJSON(
+          clientMetadata.pubsub_push_service_account,
+        ),
       });
     }
 
-    const { pubsub_project_id, topic_id, project_id, pubsub_push_service_account } = clientMetadata;
+    const {
+      pubsub_project_id,
+      topic_id,
+      project_id,
+      pubsub_push_service_account,
+    } = clientMetadata;
     if (config.debug) {
       console.log("apitoolkit:  initialized successfully");
       console.dir(pubsubClient);
@@ -103,11 +121,18 @@ export class APIToolkit {
         Accept: "application/json",
       },
     });
-    if (!resp.ok) throw new Error(`Error getting apitoolkit client_metadata ${resp.status}`);
+    if (!resp.ok)
+      throw new Error(
+        `Error getting apitoolkit client_metadata ${resp.status}`,
+      );
     return (await resp.json()) as ClientMetadata;
   }
 
-  public async expressMiddleware(req: Request, res: Response, next: NextFunction) {
+  public async expressMiddleware(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
     asyncLocalStorage.run(new Map(), () => {
       asyncLocalStorage.getStore()!.set("AT_client", this);
       asyncLocalStorage.getStore()!.set("AT_project_id", this.#project_id);
@@ -129,7 +154,8 @@ export class APIToolkit {
       };
 
       const onRespFinished =
-        (topic: Topic | undefined, req: Request, res: Response) => (err: any) => {
+        (topic: Topic | undefined, req: Request, res: Response) =>
+        (err: any) => {
           res.removeListener("close", onRespFinished(topic, req, res));
           res.removeListener("error", onRespFinished(topic, req, res));
           res.removeListener("finish", onRespFinished(topic, req, res));
@@ -144,7 +170,7 @@ export class APIToolkit {
                   if (!Array.isArray(req.files)) {
                     for (const file in req.files) {
                       req.body[file] = (req.files[file] as any).map(
-                        (f: any) => `[${f.mimetype}_FILE]`
+                        (f: any) => `[${f.mimetype}_FILE]`,
                       );
                     }
                   } else {
@@ -175,7 +201,7 @@ export class APIToolkit {
             this.#config.serviceVersion,
             this.#config.tags ?? [],
             msg_id,
-            undefined
+            undefined,
           );
 
           if (this.#config.debug) {
@@ -202,7 +228,7 @@ export class APIToolkit {
 export function ReportError(error: any) {
   if (asyncLocalStorage.getStore() == null) {
     console.log(
-      "APIToolkit: ReportError used outside of the APIToolkit middleware's scope. Use the APIToolkitClient.ReportError instead, if you're not in a web context."
+      "APIToolkit: ReportError used outside of the APIToolkit middleware's scope. Use the APIToolkitClient.ReportError instead, if you're not in a web context.",
     );
     return Promise.reject(error);
   }
