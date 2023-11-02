@@ -1,6 +1,6 @@
 import { Payload } from "../payload";
-import { APIKEY, EmptyClientMetadata } from "./apitoolkit";
-import APIToolkit, { ReportError } from "../apitoolkit";
+import { APIKEY, EmptyClientMetadata } from "./apitoolkit-async.test";
+import APIToolkitAsync, { ReportError } from "../apitoolkit-async";
 import request from "supertest";
 import express, { Request, Response } from "express";
 import axios, { AxiosResponse } from "axios";
@@ -28,7 +28,7 @@ describe("Axios Interceptors", () => {
     let published = false;
     let pingCalled = true;
     const redactHeadersVar = ["Authorization", "X-SECRET"];
-    const client = await APIToolkit.NewClient({
+    const client = await APIToolkitAsync.NewClient({
       apiKey: APIKEY,
       redactHeaders: redactHeadersVar,
       clientMetadata: EmptyClientMetadata,
@@ -74,7 +74,7 @@ describe("Axios Interceptors", () => {
     let published = false;
     let pingCalled = true;
     const redactHeadersVar = ["Authorization", "X-SECRET"];
-    const client = await APIToolkit.NewClient({
+    const client = await APIToolkitAsync.NewClient({
       apiKey: APIKEY,
       redactHeaders: redactHeadersVar,
       clientMetadata: EmptyClientMetadata,

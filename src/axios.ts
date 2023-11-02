@@ -6,7 +6,7 @@ import {
   InternalAxiosRequestConfig,
 } from "axios";
 import { ATError, Payload, redactFields, redactHeaders } from "./payload";
-import { APIToolkit, asyncLocalStorage, Config } from "./apitoolkit";
+import { APIToolkitAsync, asyncLocalStorage, Config } from "./apitoolkit-async";
 
 declare module "axios" {
   export interface InternalAxiosRequestConfig {
@@ -36,7 +36,7 @@ export const onResponse =
   (response: AxiosResponse): AxiosResponse => {
     if (asyncLocalStorage.getStore() == null) {
       console.log(
-        "APIToolkit: observeAxios used outside of the APIToolkit middleware's scope. Use the APIToolkitClient.observeAxios instead, if you're not in a web context.",
+        "APIToolkitAsync: observeAxios used outside of the APIToolkitAsync middleware's scope. Use the APIToolkitAsyncClient.observeAxios instead, if you're not in a web context.",
       );
       return response;
     }
@@ -83,7 +83,7 @@ export const onResponseError =
   (error: AxiosError): Promise<AxiosError> => {
     if (asyncLocalStorage.getStore() == null) {
       console.log(
-        "APIToolkit: observeAxios used outside of the APIToolkit middleware's scope. Use the APIToolkitClient.observeAxios instead, if you're not in a web context.",
+        "APIToolkitAsync: observeAxios used outside of the APIToolkitAsync middleware's scope. Use the APIToolkitAsyncClient.observeAxios instead, if you're not in a web context.",
       );
       return Promise.reject(error);
     }
@@ -94,7 +94,7 @@ export const onResponseError =
     const reqBody = JSON.stringify(req?.data || {});
     const respBody = JSON.stringify(res?.data || {});
     const project_id = asyncLocalStorage.getStore()!.get("AT_project_id");
-    const ATClient: APIToolkit = asyncLocalStorage.getStore()!.get("AT_client");
+    const ATClient: APIToolkitAsync = asyncLocalStorage.getStore()!.get("AT_client");
     const ATConfig: Config = asyncLocalStorage.getStore()!.get("AT_config");
     const parent_id: string = asyncLocalStorage.getStore()!.get("AT_msg_id");
 

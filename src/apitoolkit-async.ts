@@ -1,4 +1,3 @@
-
 import fetch from "node-fetch";
 import { PubSub, Topic } from "@google-cloud/pubsub";
 import { NextFunction, Request, Response } from "express";
@@ -27,7 +26,7 @@ type ClientMetadata = {
 
 export const asyncLocalStorage = new AsyncLocalStorage<Map<string, any>>();
 
-export class APIToolkit {
+export class APIToolkitAsync {
   #topicName: string;
   #topic: Topic | undefined;
   #pubsub: PubSub | undefined;
@@ -53,13 +52,13 @@ export class APIToolkit {
       const callback = (err: any, messageId: any) => {
         if (this.#config.debug) {
           console.log(
-            "APIToolkit: pubsub publish callback called; messageId: ",
+            "APIToolkitAsync: pubsub publish callback called; messageId: ",
             messageId,
             " error ",
             err,
           );
           if (err != null) {
-            console.log("APIToolkit: error publishing message to pubsub");
+            console.log("APIToolkitAsync: error publishing message to pubsub");
             console.error(err);
           }
         }
@@ -69,7 +68,7 @@ export class APIToolkit {
       } else {
         if (this.#config.debug) {
           console.error(
-            "APIToolkit: error publishing message to pubsub, Undefined topic",
+            "APIToolkitAsync: error publishing message to pubsub, Undefined topic",
           );
         }
       }
@@ -106,7 +105,7 @@ export class APIToolkit {
       console.dir(pubsubClient);
     }
 
-    return new APIToolkit(pubsubClient, topic_id, project_id, config);
+    return new APIToolkitAsync(pubsubClient, topic_id, project_id, config);
   }
 
   public async close() {
@@ -143,7 +142,7 @@ export class APIToolkit {
       asyncLocalStorage.getStore()!.set("AT_msg_id", msg_id);
 
       if (this.#config.debug) {
-        console.log("APIToolkit: expressMiddleware called");
+        console.log("APIToolkitAsync: expressMiddleware called");
       }
 
       const start_time = process.hrtime.bigint();
@@ -206,7 +205,7 @@ export class APIToolkit {
           );
 
           if (this.#config.debug) {
-            console.log("APIToolkit: publish prepared payload ");
+            console.log("APIToolkitAsync: publish prepared payload ");
             console.dir(payload);
           }
           this.publishMessage(payload);
@@ -229,7 +228,7 @@ export class APIToolkit {
 export function ReportError(error: any) {
   if (asyncLocalStorage.getStore() == null) {
     console.log(
-      "APIToolkit: ReportError used outside of the APIToolkit middleware's scope. Use the APIToolkitClient.ReportError instead, if you're not in a web context.",
+      "APIToolkitAsync: ReportError used outside of the APIToolkitAsync middleware's scope. Use the APIToolkitAsyncClient.ReportError instead, if you're not in a web context.",
     );
     return Promise.reject(error);
   }
@@ -328,4 +327,4 @@ function buildError(err: Error): ATError {
   };
 }
 
-export default APIToolkit;
+export default APIToolkitAsync;

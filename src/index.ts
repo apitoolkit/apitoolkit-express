@@ -1,10 +1,10 @@
-import APIToolKitDefault from './apitoolkit'
+import APIToolkit from './apitoolkit-async'
 
 export {
-APIToolkit,
+APIToolkitAsync,
 asyncLocalStorage,
 ReportError,
 Config,
-} from './apitoolkit'
+} from './apitoolkit-async'
 
-export default APIToolKitDefault
+export default APIToolkit
