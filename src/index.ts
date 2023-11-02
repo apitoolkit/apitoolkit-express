@@ -8,3 +8,5 @@ export {
 } from "./apitoolkit-async";
 
 export default APIToolkit;
+
+export { APIToolkit  } from './apitoolkit'
