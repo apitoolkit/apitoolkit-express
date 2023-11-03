@@ -1,6 +1,4 @@
-import { PubSub, Topic } from "@google-cloud/pubsub";
-import { NextFunction, Request, Response } from "express";
-import { AsyncLocalStorage } from "async_hooks";
+import { Request, Response } from "express";
 import jsonpath from "jsonpath";
 
 // ATError is the Apitoolkit error type/object
@@ -19,17 +17,17 @@ export type Payload = {
   duration: number;
   host: string;
   method: string;
-  path_params: Object;
+  path_params: Record<string, any>;
   project_id: string;
   proto_major: number;
   proto_minor: number;
-  query_params: Object;
+  query_params: Record<string, any>;
   raw_url: string;
   referer: string;
   request_body: string;
-  request_headers: Object;
+  request_headers: Record<string, any>;
   response_body: string;
-  response_headers: Object;
+  response_headers: Record<string, any>;
   sdk_type: string;
   status_code: number;
   timestamp: string;
@@ -126,7 +124,7 @@ export function redactHeaders(
     header.toLowerCase(),
   );
 
-  for (let [key, value] of headers) {
+  for (const [key, value] of headers) {
     const lowerKey = key.toLowerCase();
     const isRedactKey =
       headersToRedactLowerCase.includes(lowerKey) || lowerKey === "cookie";

@@ -1,10 +1,10 @@
-import request from "sync-request-curl";
-
 import { PubSub, Topic } from "@google-cloud/pubsub";
-import { NextFunction, Request, Response } from "express";
 import { AsyncLocalStorage } from "async_hooks";
-import { ATError, Payload, buildPayload } from "./payload";
+import { NextFunction, Request, Response } from "express";
+import request from "sync-request-curl";
 import { v4 as uuidv4 } from "uuid";
+
+import { ATError, buildPayload,Payload } from "./payload";
 
 
 export type Config = {
@@ -101,13 +101,14 @@ export class APIToolkit {
   }
 
   static NewClient(config: Config): APIToolkit {
-    var {
+    // eslint-disable-next-line prefer-const
+    let {
       apiKey,
       rootURL = "https://app.apitoolkit.io",
       clientMetadata,
     } = config;
 
-    var pubsubClient;
+    let pubsubClient;
     if (clientMetadata == null || apiKey != "") {
       clientMetadata = this.getClientMetadata(rootURL, apiKey);
       pubsubClient = new PubSub({
@@ -119,10 +120,8 @@ export class APIToolkit {
     }
 
     const {
-      pubsub_project_id,
       topic_id,
       project_id,
-      pubsub_push_service_account,
     } = clientMetadata;
     if (config.debug) {
       console.log("apitoolkit:  initialized successfully");
@@ -132,7 +131,7 @@ export class APIToolkit {
     return new APIToolkit(pubsubClient, topic_id, project_id, config);
   }
 
-  public async expressMiddleware(
+  public expressMiddleware(
     req: Request,
     res: Response,
     next: NextFunction,
@@ -244,7 +243,7 @@ export function ReportError(error: any) {
 
   const [nError, internalFrames] = resp;
   const atError = buildError(nError);
-  var errList: ATError[] = asyncLocalStorage.getStore()!.get("AT_errors");
+  const errList: ATError[] = asyncLocalStorage.getStore()!.get("AT_errors");
   errList.push(atError);
   asyncLocalStorage.getStore()!.set("AT_errors", errList);
 }
@@ -258,7 +257,7 @@ function rootCause(err: Error): Error {
   return cause;
 }
 
-function normaliseError(maybeError: any): [Error, Number] | undefined {
+function normaliseError(maybeError: any): [Error, number] | undefined {
   let error;
   let internalFrames = 0;
 

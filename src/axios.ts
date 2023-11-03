@@ -5,8 +5,9 @@ import {
   AxiosResponse,
   InternalAxiosRequestConfig,
 } from "axios";
-import { ATError, Payload, redactFields, redactHeaders } from "./payload";
+
 import { APIToolkitAsync, asyncLocalStorage, Config } from "./apitoolkit-async";
+import { ATError, Payload, redactFields, redactHeaders } from "./payload";
 
 declare module "axios" {
   export interface InternalAxiosRequestConfig {
@@ -50,7 +51,7 @@ export const onResponse =
     const ATConfig: Config = asyncLocalStorage.getStore()!.get("AT_config");
     const parent_id: string = asyncLocalStorage.getStore()!.get("AT_msg_id");
 
-    var errors: ATError[] = [];
+    const errors: ATError[] = [];
 
     const payload = buildPayload(
       response.config.meta.startTime,
@@ -100,7 +101,7 @@ export const onResponseError =
     const ATConfig: Config = asyncLocalStorage.getStore()!.get("AT_config");
     const parent_id: string = asyncLocalStorage.getStore()!.get("AT_msg_id");
 
-    var errors: ATError[] = [];
+    const errors: ATError[] = [];
 
     const payload = buildPayload(
       error.config?.meta.startTime ?? process.hrtime.bigint(),

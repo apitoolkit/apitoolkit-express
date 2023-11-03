@@ -1,9 +1,10 @@
-import fetch from "node-fetch";
 import { PubSub, Topic } from "@google-cloud/pubsub";
-import { NextFunction, Request, Response } from "express";
 import { AsyncLocalStorage } from "async_hooks";
-import { ATError, Payload, buildPayload } from "./payload";
+import { NextFunction, Request, Response } from "express";
+import fetch from "node-fetch";
 import { v4 as uuidv4 } from "uuid";
+
+import { ATError, buildPayload,Payload } from "./payload";
 
 export type Config = {
   apiKey: string;
@@ -77,15 +78,14 @@ export class APIToolkitAsync {
   }
 
   static async NewClient(config: Config) {
-    var {
-      apiKey,
+    let {
       rootURL = "https://app.apitoolkit.io",
       clientMetadata,
     } = config;
 
-    var pubsubClient;
-    if (clientMetadata == null || apiKey != "") {
-      clientMetadata = await this.getClientMetadata(rootURL, apiKey);
+    let pubsubClient;
+    if (clientMetadata == null || config.apiKey != "") {
+      clientMetadata = await this.getClientMetadata(rootURL, config.apiKey);
       pubsubClient = new PubSub({
         projectId: clientMetadata.pubsub_project_id,
         authClient: new PubSub().auth.fromJSON(
@@ -95,10 +95,8 @@ export class APIToolkitAsync {
     }
 
     const {
-      pubsub_project_id,
       topic_id,
       project_id,
-      pubsub_push_service_account,
     } = clientMetadata;
     if (config.debug) {
       console.log("apitoolkit:  initialized successfully");
@@ -128,7 +126,7 @@ export class APIToolkitAsync {
     return (await resp.json()) as ClientMetadata;
   }
 
-  public async expressMiddleware(
+  public expressMiddleware(
     req: Request,
     res: Response,
     next: NextFunction,
@@ -238,9 +236,9 @@ export function ReportError(error: any) {
     return;
   }
 
-  const [nError, internalFrames] = resp;
+  const [nError, _internalFrames] = resp;
   const atError = buildError(nError);
-  var errList: ATError[] = asyncLocalStorage.getStore()!.get("AT_errors");
+  const errList: ATError[] = asyncLocalStorage.getStore()!.get("AT_errors");
   errList.push(atError);
   asyncLocalStorage.getStore()!.set("AT_errors", errList);
 }
@@ -254,7 +252,7 @@ function rootCause(err: Error): Error {
   return cause;
 }
 
-function normaliseError(maybeError: any): [Error, Number] | undefined {
+function normaliseError(maybeError: any): [Error, number] | undefined {
   let error;
   let internalFrames = 0;
 

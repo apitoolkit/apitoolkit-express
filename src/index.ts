@@ -3,8 +3,8 @@ import APIToolkit from "./apitoolkit-async";
 export {
   APIToolkitAsync,
   asyncLocalStorage,
-  ReportError,
   Config,
+  ReportError,
 } from "./apitoolkit-async";
 
 export default APIToolkit;
