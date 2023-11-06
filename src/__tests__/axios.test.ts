@@ -1,10 +1,10 @@
-import { Payload } from "./payload";
-import { APIKEY, EmptyClientMetadata } from "./index.test";
-import APIToolkit, { ReportError } from "./index";
+import { Payload } from "../payload";
+import { APIKEY, EmptyClientMetadata } from "./apitoolkit-async.test";
+import APIToolkitAsync, { ReportError } from "../apitoolkit-async";
 import request from "supertest";
 import express, { Request, Response } from "express";
 import axios, { AxiosResponse } from "axios";
-import { observeAxios } from "./axios";
+import { observeAxios } from "../axios";
 
 describe("Axios Interceptors", () => {
   let server: any;
@@ -28,7 +28,7 @@ describe("Axios Interceptors", () => {
     let published = false;
     let pingCalled = true;
     const redactHeadersVar = ["Authorization", "X-SECRET"];
-    const client = await APIToolkit.NewClient({
+    const client = await APIToolkitAsync.NewClient({
       apiKey: APIKEY,
       redactHeaders: redactHeadersVar,
       clientMetadata: EmptyClientMetadata,
@@ -48,7 +48,9 @@ describe("Axios Interceptors", () => {
       res.json({ ping: "pong" });
     });
     app.get("/:slug/test", async (req: Request, res: Response) => {
-      const response: AxiosResponse = await observeAxios(axios).get(`${baseURL}/ping`);
+      const response: AxiosResponse = await observeAxios(axios).get(
+        `${baseURL}/ping`,
+      );
       res.json(response.data);
     });
 
@@ -59,7 +61,9 @@ describe("Axios Interceptors", () => {
       .send({ data: "resp" });
 
     expect(response.status).toBe(200);
-    expect(JSON.stringify(response.body)).toBe(JSON.stringify({ ping: "pong" }));
+    expect(JSON.stringify(response.body)).toBe(
+      JSON.stringify({ ping: "pong" }),
+    );
     expect(published).toBe(true);
     expect(pingCalled).toBe(true);
 
@@ -70,7 +74,7 @@ describe("Axios Interceptors", () => {
     let published = false;
     let pingCalled = true;
     const redactHeadersVar = ["Authorization", "X-SECRET"];
-    const client = await APIToolkit.NewClient({
+    const client = await APIToolkitAsync.NewClient({
       apiKey: APIKEY,
       redactHeaders: redactHeadersVar,
       clientMetadata: EmptyClientMetadata,
@@ -96,7 +100,7 @@ describe("Axios Interceptors", () => {
           "/test/{username}",
           undefined,
           undefined,
-          undefined
+          undefined,
         ).get(`${baseURL}/pingxwrong`);
         res.json(response.data);
       } catch (err) {
@@ -112,7 +116,9 @@ describe("Axios Interceptors", () => {
       .send({ data: "resp" });
 
     expect(response.status).toBe(200);
-    expect(JSON.stringify(response.body)).toBe(JSON.stringify({ hello: "error" }));
+    expect(JSON.stringify(response.body)).toBe(
+      JSON.stringify({ hello: "error" }),
+    );
     // expect(published).toBe(true)
     // expect(pingCalled).toBe(true)
 

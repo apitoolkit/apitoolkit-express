@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       release-type:
-        description: 'Release type (one of): patch, minor, major, prepatch, preminor, premajor, prerelease'
+        description: "Release type (one of): patch, minor, major, prepatch, preminor, premajor, prerelease"
         required: true
 jobs:
   release:
@@ -18,7 +18,7 @@ jobs:
         uses: actions/setup-node@v3
         with:
           registry-url: https://registry.npmjs.org/
-          node-version: '14'
+          node-version: "14"
 
       # Install dependencies (required by Run tests step)
       - name: Install dependencies
@@ -30,7 +30,7 @@ jobs:
         env:
           APITOOLKIT_KEY: ${{ secrets.APITOOLKIT_KEY }}
 
-      - run: yarn run build 
+      - run: yarn run build
 
       # Configure Git
       - name: Git configuration
@@ -86,7 +86,6 @@ jobs:
         run: yarn publish --verbose --access public --tag ${{ env.RELEASE_TAG }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
 
       # Read version changelog
       - id: get-changelog

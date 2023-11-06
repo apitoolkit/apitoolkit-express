@@ -1,12 +1,11 @@
-import { Payload, redactFields, redactHeaders } from "./payload";
-import APIToolkit from "./index";
+import { Payload, redactFields, redactHeaders } from "../payload";
+import { APIToolkit } from "../apitoolkit";
 import { PubSub } from "@google-cloud/pubsub";
 import request from "supertest";
 import express, { Request, Response, Router } from "express";
 import multer from "multer";
 import formidable from "formidable";
 import busboy from "busboy";
-import axios, { AxiosResponse } from "axios";
 
 export const APIKEY = process.env["APITOOLKIT_KEY"] || "";
 export const EmptyClientMetadata = {
@@ -54,10 +53,10 @@ describe("Express SDK API Tests", () => {
       expect(payload.url_path).toBe("/:slug/test");
       expect(payload.raw_url).toBe("/slug-value/test");
       expect(payload.response_body).toBe(
-        Buffer.from(JSON.stringify(exampleDataRedacted)).toString("base64")
+        Buffer.from(JSON.stringify(exampleDataRedacted)).toString("base64"),
       );
       expect(payload.request_body).toBe(
-        Buffer.from(JSON.stringify(exampleRequestData)).toString("base64")
+        Buffer.from(JSON.stringify(exampleRequestData)).toString("base64"),
       );
       published = true;
     };
@@ -79,14 +78,14 @@ describe("Express SDK API Tests", () => {
     expect(response.body.status).toBe("success");
     expect(published).toBe(true);
 
-    await client.close()
+    await client.close();
   });
 
   it("should get data", async () => {
     const app = express();
     let published = false;
     const redactHeaders = ["Authorization", "X-SECRET"];
-    const client = await APIToolkit.NewClient({
+    const client = APIToolkit.NewClient({
       apiKey: APIKEY,
       redactHeaders,
       clientMetadata: EmptyClientMetadata,
@@ -98,14 +97,17 @@ describe("Express SDK API Tests", () => {
       }
       expect(payload.method).toBe("GET");
       expect(payload.path_params).toMatchObject({ slug: "slug-value" });
-      expect(payload.query_params).toMatchObject({ param1: ["abc"], param2: ["123"] });
+      expect(payload.query_params).toMatchObject({
+        param1: ["abc"],
+        param2: ["123"],
+      });
       expect(payload.status_code).toBe(200);
       expect(payload.sdk_type).toBe("JsExpress");
       expect(payload.url_path).toBe("/:slug/test");
       expect(payload.raw_url).toBe("/slug-value/test?param1=abc&param2=123");
       expect(payload.duration).toBeGreaterThan(500_000_000);
       expect(payload.response_body).toBe(
-        Buffer.from(JSON.stringify(exampleRequestData)).toString("base64")
+        Buffer.from(JSON.stringify(exampleRequestData)).toString("base64"),
       );
       published = true;
     };
@@ -126,17 +128,19 @@ describe("Express SDK API Tests", () => {
       .send(exampleRequestData);
 
     expect(response.status).toBe(200);
-    expect(JSON.stringify(response.body)).toBe(JSON.stringify(exampleRequestData));
+    expect(JSON.stringify(response.body)).toBe(
+      JSON.stringify(exampleRequestData),
+    );
     expect(published).toBe(true);
 
-    await client.close()
+    await client.close();
   });
 
   it("should check sub routes", async () => {
     const app = express();
     let published = false;
     const redactHeaders = ["Authorization", "X-SECRET"];
-    const client = await APIToolkit.NewClient({
+    const client = APIToolkit.NewClient({
       apiKey: APIKEY,
       redactHeaders,
       clientMetadata: EmptyClientMetadata,
@@ -149,7 +153,9 @@ describe("Express SDK API Tests", () => {
       }
       expect(payload.sdk_type).toBe("JsExpress");
       expect(payload.url_path).toBe("/parent/:slug/test");
-      expect(payload.raw_url).toBe("/parent/slug-value/test?param1=abc&param2=123");
+      expect(payload.raw_url).toBe(
+        "/parent/slug-value/test?param1=abc&param2=123",
+      );
       published = true;
     };
     app.use(client.expressMiddleware);
@@ -169,10 +175,12 @@ describe("Express SDK API Tests", () => {
       .send(exampleRequestData);
 
     expect(response.status).toBe(200);
-    expect(JSON.stringify(response.body)).toBe(JSON.stringify(exampleRequestData));
+    expect(JSON.stringify(response.body)).toBe(
+      JSON.stringify(exampleRequestData),
+    );
     expect(published).toBe(true);
 
-    await client.close()
+    await client.close();
   });
 
   it("should check sub sub sub routes", async () => {
@@ -191,7 +199,9 @@ describe("Express SDK API Tests", () => {
       }
       expect(payload.sdk_type).toBe("JsExpress");
       expect(payload.url_path).toBe("/parent/parent2/parent3/:slug/test");
-      expect(payload.raw_url).toBe("/parent/parent2/parent3/slug-value/test?param1=abc&param2=123");
+      expect(payload.raw_url).toBe(
+        "/parent/parent2/parent3/slug-value/test?param1=abc&param2=123",
+      );
       published = true;
     };
     app.use(client.expressMiddleware);
@@ -216,16 +226,18 @@ describe("Express SDK API Tests", () => {
       .send(exampleRequestData);
 
     expect(response.status).toBe(200);
-    expect(JSON.stringify(response.body)).toBe(JSON.stringify(exampleRequestData));
+    expect(JSON.stringify(response.body)).toBe(
+      JSON.stringify(exampleRequestData),
+    );
     expect(published).toBe(true);
 
-    await client.close()
+    await client.close();
   });
 
   it("should ignore path for endpoins with OPTION", async () => {
     const app = express();
     let published = false;
-    const client = await APIToolkit.NewClient({
+    const client = APIToolkit.NewClient({
       apiKey: APIKEY,
       clientMetadata: EmptyClientMetadata,
     });
@@ -260,7 +272,7 @@ describe("Express SDK API Tests", () => {
     expect(response.body.message).toBe("OPTIONS ignored");
     expect(published).toBe(true);
 
-    await client.close()
+    await client.close();
   });
 });
 
@@ -269,7 +281,7 @@ describe("File Upload Endpoint", () => {
   it("should upload files (multer)", async () => {
     const app = express();
     let published = false;
-    const client = await APIToolkit.NewClient({
+    const client = APIToolkit.NewClient({
       apiKey: APIKEY,
       clientMetadata: EmptyClientMetadata,
     });
@@ -286,11 +298,13 @@ describe("File Upload Endpoint", () => {
             name: "John",
             file_one: ["[image/png_FILE]"],
             file_two: ["[image/png_FILE]"],
-          })
-        ).toString("base64")
+          }),
+        ).toString("base64"),
       );
       expect(payload.response_body).toBe(
-        Buffer.from(JSON.stringify({ message: "File upload successful." })).toString("base64")
+        Buffer.from(
+          JSON.stringify({ message: "File upload successful." }),
+        ).toString("base64"),
       );
       published = true;
     };
@@ -325,7 +339,7 @@ describe("File Upload Endpoint", () => {
           ],
         });
         res.status(200).json({ message: "File upload successful." });
-      }
+      },
     );
     const response = await request(app)
       .post("/upload-multer")
@@ -336,13 +350,13 @@ describe("File Upload Endpoint", () => {
     expect(response.body.message).toBe("File upload successful.");
     expect(published).toBe(true);
 
-    await client.close()
+    await client.close();
   });
 
   it("should upload files (formidable)", async () => {
     const app = express();
     let published = false;
-    const client = await APIToolkit.NewClient({
+    const client = APIToolkit.NewClient({
       apiKey: APIKEY,
       clientMetadata: EmptyClientMetadata,
     });
@@ -355,7 +369,9 @@ describe("File Upload Endpoint", () => {
       expect(payload.status_code).toBe(200);
       expect(payload.sdk_type).toBe("JsExpress");
       expect(payload.response_body).toBe(
-        Buffer.from(JSON.stringify({ message: "Uploaded successfully" })).toString("base64")
+        Buffer.from(
+          JSON.stringify({ message: "Uploaded successfully" }),
+        ).toString("base64"),
       );
       published = true;
     };
@@ -392,13 +408,13 @@ describe("File Upload Endpoint", () => {
     expect(response.body.message).toBe("Uploaded successfully");
     expect(published).toBe(true);
 
-    await client.close()
+    await client.close();
   });
 
   it("should upload files (busboy)", async () => {
     const app = express();
     let published = false;
-    const client = await APIToolkit.NewClient({
+    const client = APIToolkit.NewClient({
       apiKey: APIKEY,
       clientMetadata: EmptyClientMetadata,
     });
@@ -411,7 +427,9 @@ describe("File Upload Endpoint", () => {
       expect(payload.status_code).toBe(200);
       expect(payload.sdk_type).toBe("JsExpress");
       expect(payload.response_body).toBe(
-        Buffer.from(JSON.stringify({ message: "Uploaded successfully" })).toString("base64")
+        Buffer.from(
+          JSON.stringify({ message: "Uploaded successfully" }),
+        ).toString("base64"),
       );
       published = true;
     };
@@ -458,7 +476,7 @@ describe("File Upload Endpoint", () => {
     expect(response.body.message).toBe("Uploaded successfully");
     expect(published).toBe(true);
 
-    await client.close()
+    await client.close();
   });
 });
 
@@ -469,7 +487,10 @@ describe("testing headers and jsonpath redaction", () => {
     const pubsub = new PubSub({
       projectId: "pubsub_project_id",
     });
-    myClassInstance = new APIToolkit(pubsub, "topic_id", "project_id", { apiKey: "", debug: true });
+    myClassInstance = new APIToolkit(pubsub, "topic_id", "project_id", {
+      apiKey: "",
+      debug: true,
+    });
   });
 
   it("should redact headers correctly", () => {
@@ -497,7 +518,7 @@ describe("testing headers and jsonpath redaction", () => {
 
     expect(redactedBody).toContain('"email":"[CLIENT_REDACTED]"');
     expect(redactedBody).toContain(
-      '{"title":"Book 1","author":"[CLIENT_REDACTED]"},{"title":"Book 2","author":"[CLIENT_REDACTED]"}'
+      '{"title":"Book 1","author":"[CLIENT_REDACTED]"},{"title":"Book 2","author":"[CLIENT_REDACTED]"}',
     );
     expect(redactedBody).toContain('"name":"John"');
   });
@@ -548,7 +569,11 @@ const exampleDataRedacted = {
       account_updated_at: "2020-01-01T00:00:00Z",
       account_deleted_at: "2020-01-01T00:00:00Z",
       possible_account_types: "[CLIENT_REDACTED]",
-      possible_account_types2: ["[CLIENT_REDACTED]", "[CLIENT_REDACTED]", "[CLIENT_REDACTED]"],
+      possible_account_types2: [
+        "[CLIENT_REDACTED]",
+        "[CLIENT_REDACTED]",
+        "[CLIENT_REDACTED]",
+      ],
     },
   },
 };
