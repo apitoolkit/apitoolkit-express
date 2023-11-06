@@ -1,11 +1,10 @@
 import { PubSub, Topic } from "@google-cloud/pubsub";
 import { AsyncLocalStorage } from "async_hooks";
 import { NextFunction, Request, Response } from "express";
-import request from "sync-request-curl";
+import fetch from "node-fetch";
 import { v4 as uuidv4 } from "uuid";
 
 import { ATError, buildPayload,Payload } from "./payload";
-
 
 export type Config = {
   apiKey: string;
@@ -78,39 +77,15 @@ export class APIToolkit {
     this.expressMiddleware = this.expressMiddleware.bind(this);
   }
 
-  public async close() {
-    await this.#topic?.flush();
-    await this.#pubsub?.close();
-  }
-
-  static getClientMetadata(rootURL: string, apiKey: string): ClientMetadata {
-    const response = request("GET", `${rootURL}/api/client_metadata`, {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        Accept: "application/json",
-      },
-    });
-
-    if (response.statusCode !== 200) {
-      throw new Error(
-        `Error getting apitoolkit client_metadata ${response.statusCode}`,
-      );
-    }
-
-    return JSON.parse(response.body as string) as ClientMetadata;
-  }
-
-  static NewClient(config: Config): APIToolkit {
-    // eslint-disable-next-line prefer-const
+  static async NewClient(config: Config) {
     let {
-      apiKey,
       rootURL = "https://app.apitoolkit.io",
       clientMetadata,
     } = config;
 
     let pubsubClient;
-    if (clientMetadata == null || apiKey != "") {
-      clientMetadata = this.getClientMetadata(rootURL, apiKey);
+    if (clientMetadata == null || config.apiKey != "") {
+      clientMetadata = await this.getClientMetadata(rootURL, config.apiKey);
       pubsubClient = new PubSub({
         projectId: clientMetadata.pubsub_project_id,
         authClient: new PubSub().auth.fromJSON(
@@ -129,6 +104,26 @@ export class APIToolkit {
     }
 
     return new APIToolkit(pubsubClient, topic_id, project_id, config);
+  }
+
+  public async close() {
+    await this.#topic?.flush();
+    await this.#pubsub?.close();
+  }
+
+  static async getClientMetadata(rootURL: string, apiKey: string) {
+    const resp = await fetch(rootURL + "/api/client_metadata", {
+      method: "GET",
+      headers: {
+        Authorization: "Bearer " + apiKey,
+        Accept: "application/json",
+      },
+    });
+    if (!resp.ok)
+      throw new Error(
+        `Error getting apitoolkit client_metadata ${resp.status}`,
+      );
+    return (await resp.json()) as ClientMetadata;
   }
 
   public expressMiddleware(
@@ -241,7 +236,7 @@ export function ReportError(error: any) {
     return;
   }
 
-  const [nError, internalFrames] = resp;
+  const [nError, _internalFrames] = resp;
   const atError = buildError(nError);
   const errList: ATError[] = asyncLocalStorage.getStore()!.get("AT_errors");
   errList.push(atError);

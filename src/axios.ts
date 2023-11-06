@@ -6,7 +6,7 @@ import {
   InternalAxiosRequestConfig,
 } from "axios";
 
-import { APIToolkitAsync, asyncLocalStorage, Config } from "./apitoolkit-async";
+import { APIToolkit, asyncLocalStorage, Config } from "./apitoolkit";
 import { ATError, Payload, redactFields, redactHeaders } from "./payload";
 
 declare module "axios" {
@@ -37,7 +37,7 @@ export const onResponse =
   (response: AxiosResponse): AxiosResponse => {
     if (asyncLocalStorage.getStore() == null) {
       console.log(
-        "APIToolkitAsync: observeAxios used outside of the APIToolkitAsync middleware's scope. Use the APIToolkitAsyncClient.observeAxios instead, if you're not in a web context.",
+        "APIToolkit: observeAxios used outside of the APIToolkit middleware's scope. Use the APIToolkitClient.observeAxios instead, if you're not in a web context.",
       );
       return response;
     }
@@ -84,7 +84,7 @@ export const onResponseError =
   (error: AxiosError): Promise<AxiosError> => {
     if (asyncLocalStorage.getStore() == null) {
       console.log(
-        "APIToolkitAsync: observeAxios used outside of the APIToolkitAsync middleware's scope. Use the APIToolkitAsyncClient.observeAxios instead, if you're not in a web context.",
+        "APIToolkit: observeAxios used outside of the APIToolkit middleware's scope. Use the APIToolkitClient.observeAxios instead, if you're not in a web context.",
       );
       return Promise.reject(error);
     }
@@ -95,7 +95,7 @@ export const onResponseError =
     const reqBody = JSON.stringify(req?.data || {});
     const respBody = JSON.stringify(res?.data || {});
     const project_id = asyncLocalStorage.getStore()!.get("AT_project_id");
-    const ATClient: APIToolkitAsync = asyncLocalStorage
+    const ATClient: APIToolkit = asyncLocalStorage
       .getStore()!
       .get("AT_client");
     const ATConfig: Config = asyncLocalStorage.getStore()!.get("AT_config");

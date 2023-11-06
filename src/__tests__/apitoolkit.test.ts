@@ -1,5 +1,5 @@
 import { Payload, redactFields, redactHeaders } from "../payload";
-import { APIToolkit } from "../apitoolkit";
+import APIToolkit from "../apitoolkit";
 import { PubSub } from "@google-cloud/pubsub";
 import request from "supertest";
 import express, { Request, Response, Router } from "express";
@@ -85,7 +85,7 @@ describe("Express SDK API Tests", () => {
     const app = express();
     let published = false;
     const redactHeaders = ["Authorization", "X-SECRET"];
-    const client = APIToolkit.NewClient({
+    const client = await APIToolkit.NewClient({
       apiKey: APIKEY,
       redactHeaders,
       clientMetadata: EmptyClientMetadata,
@@ -140,7 +140,7 @@ describe("Express SDK API Tests", () => {
     const app = express();
     let published = false;
     const redactHeaders = ["Authorization", "X-SECRET"];
-    const client = APIToolkit.NewClient({
+    const client = await APIToolkit.NewClient({
       apiKey: APIKEY,
       redactHeaders,
       clientMetadata: EmptyClientMetadata,
@@ -237,7 +237,7 @@ describe("Express SDK API Tests", () => {
   it("should ignore path for endpoins with OPTION", async () => {
     const app = express();
     let published = false;
-    const client = APIToolkit.NewClient({
+    const client = await APIToolkit.NewClient({
       apiKey: APIKEY,
       clientMetadata: EmptyClientMetadata,
     });
@@ -281,7 +281,7 @@ describe("File Upload Endpoint", () => {
   it("should upload files (multer)", async () => {
     const app = express();
     let published = false;
-    const client = APIToolkit.NewClient({
+    const client = await APIToolkit.NewClient({
       apiKey: APIKEY,
       clientMetadata: EmptyClientMetadata,
     });
@@ -356,7 +356,7 @@ describe("File Upload Endpoint", () => {
   it("should upload files (formidable)", async () => {
     const app = express();
     let published = false;
-    const client = APIToolkit.NewClient({
+    const client = await APIToolkit.NewClient({
       apiKey: APIKEY,
       clientMetadata: EmptyClientMetadata,
     });
@@ -414,7 +414,7 @@ describe("File Upload Endpoint", () => {
   it("should upload files (busboy)", async () => {
     const app = express();
     let published = false;
-    const client = APIToolkit.NewClient({
+    const client = await APIToolkit.NewClient({
       apiKey: APIKEY,
       clientMetadata: EmptyClientMetadata,
     });
