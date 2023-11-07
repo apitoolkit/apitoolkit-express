@@ -22,7 +22,7 @@ Intialize apitoolkit into your project is as simple as :
 ```js
 import { APIToolkit } from "apitoolkit-express";
 
-const apitoolkitClient = await APIToolkit.NewClient({ apiKey: "<API-KEY>" });
+const apitoolkitClient = APIToolkit.NewClient({ apiKey: "<API-KEY>" });
 ```
 
 where `<API-KEY>` is the API key which can be generated from your [apitoolkit.io](apitoolkit.io) accoun
@@ -45,7 +45,7 @@ import express from "express";
 
 const app = express();
 const port = 3000;
-const apitoolkit = await APIToolkit.NewClient({
+const apitoolkit = APIToolkit.NewClient({
   apiKey: "<API-KEY>", // Required: API Key generated from apitoolkit dashboard
 });
 app.use(apitoolkit.expressMiddleware);
@@ -133,7 +133,7 @@ import { APIToolkit } from "apitoolkit-express";
 import formidable from "formidable";
 
 const app = express();
-const client = await APIToolkit.NewClient({
+const client = APIToolkit.NewClient({
   apiKey: "<API_KEY>",
 });
 
@@ -221,7 +221,7 @@ In that case, you can call ReportError, but on the apitoolkit client, instead.
 ```js
 import APIToolkit from "apitoolkit-express";
 
-const apitoolkitClient = await APIToolkit.NewClient({ apiKey: "<API-KEY>" });
+const apitoolkitClient = APIToolkit.NewClient({ apiKey: "<API-KEY>" });
 
 try {
   const response = await observeAxios(axios).get(`${baseURL}/ping`);

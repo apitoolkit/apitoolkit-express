@@ -25,7 +25,7 @@ export declare class APIToolkit {
     #private;
     publishMessage: (payload: Payload) => void;
     constructor(pubsub: PubSub | undefined, topicName: string, project_id: string, config: Config);
-    static NewClient(config: Config): Promise<APIToolkit>;
+    static NewClient(config: Config): APIToolkit;
     close(): Promise<void>;
     static getClientMetadata(rootURL: string, apiKey: string): ClientMetadata;
     expressMiddleware(req: Request, res: Response, next: NextFunction): void;

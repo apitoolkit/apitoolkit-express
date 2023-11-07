@@ -75,12 +75,12 @@ export class APIToolkit {
     this.expressMiddleware = this.expressMiddleware.bind(this);
   }
 
-  static async NewClient(config: Config) {
+  static NewClient(config: Config) {
     let { rootURL = 'https://app.apitoolkit.io', clientMetadata } = config;
 
     let pubsubClient;
     if (clientMetadata == null || config.apiKey != '') {
-      clientMetadata = await this.getClientMetadata(rootURL, config.apiKey);
+      clientMetadata = this.getClientMetadata(rootURL, config.apiKey);
       pubsubClient = new PubSub({
         projectId: clientMetadata.pubsub_project_id,
         authClient: new PubSub().auth.fromJSON(clientMetadata.pubsub_push_service_account),
@@ -144,7 +144,7 @@ export class APIToolkit {
       };
 
       const onRespFinished =
-        (topic: Topic | undefined, req: Request, res: Response) => (err: any) => {
+        (topic: Topic | undefined, req: Request, res: Response) => (_err: any) => {
           res.removeListener('close', onRespFinished(topic, req, res));
           res.removeListener('error', onRespFinished(topic, req, res));
           res.removeListener('finish', onRespFinished(topic, req, res));
