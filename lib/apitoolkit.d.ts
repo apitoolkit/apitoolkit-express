@@ -1,8 +1,8 @@
 /// <reference types="node" />
-import { PubSub } from "@google-cloud/pubsub";
-import { AsyncLocalStorage } from "async_hooks";
-import { NextFunction, Request, Response } from "express";
-import { Payload } from "./payload";
+import { PubSub } from '@google-cloud/pubsub';
+import { AsyncLocalStorage } from 'async_hooks';
+import { NextFunction, Request, Response } from 'express';
+import { Payload } from './payload';
 export type Config = {
     apiKey: string;
     rootURL?: string;
@@ -27,7 +27,7 @@ export declare class APIToolkit {
     constructor(pubsub: PubSub | undefined, topicName: string, project_id: string, config: Config);
     static NewClient(config: Config): Promise<APIToolkit>;
     close(): Promise<void>;
-    static getClientMetadata(rootURL: string, apiKey: string): Promise<ClientMetadata>;
+    static getClientMetadata(rootURL: string, apiKey: string): ClientMetadata;
     expressMiddleware(req: Request, res: Response, next: NextFunction): void;
 }
 export declare function ReportError(error: any): Promise<never> | undefined;

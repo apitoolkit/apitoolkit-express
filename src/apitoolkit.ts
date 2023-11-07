@@ -1,10 +1,10 @@
-import { PubSub, Topic } from "@google-cloud/pubsub";
-import { AsyncLocalStorage } from "async_hooks";
-import { NextFunction, Request, Response } from "express";
-import fetch from "node-fetch";
-import { v4 as uuidv4 } from "uuid";
+import { PubSub, Topic } from '@google-cloud/pubsub';
+import { AsyncLocalStorage } from 'async_hooks';
+import { NextFunction, Request, Response } from 'express';
+import fetch from 'sync-fetch';
+import { v4 as uuidv4 } from 'uuid';
 
-import { ATError, buildPayload,Payload } from "./payload";
+import { ATError, buildPayload, Payload } from './payload';
 
 export type Config = {
   apiKey: string;
@@ -37,29 +37,29 @@ export class APIToolkit {
 
   constructor(
     pubsub: PubSub | undefined,
-    topicName: string,
+    topicName: string ,
     project_id: string,
-    config: Config,
+    config: Config
   ) {
     this.#topicName = topicName;
     this.#pubsub = pubsub;
     this.#project_id = project_id;
     this.#config = config;
-    if (this.#pubsub) {
-      this.#topic = this.#pubsub.topic(this.#topicName);
+    if (this.#pubsub && this.#topicName) {
+      this.#topic = this.#pubsub?.topic(this.#topicName);
     }
 
     this.publishMessage = (payload: Payload) => {
       const callback = (err: any, messageId: any) => {
-        if (this.#config.debug) {
+        if (this.#config?.debug) {
           console.log(
-            "APIToolkit: pubsub publish callback called; messageId: ",
+            'APIToolkit: pubsub publish callback called; messageId: ',
             messageId,
-            " error ",
-            err,
+            ' error ',
+            err
           );
           if (err != null) {
-            console.log("APIToolkit: error publishing message to pubsub");
+            console.log('APIToolkit: error publishing message to pubsub');
             console.error(err);
           }
         }
@@ -67,10 +67,8 @@ export class APIToolkit {
       if (this.#topic) {
         this.#topic.publishMessage({ json: payload }, callback);
       } else {
-        if (this.#config.debug) {
-          console.error(
-            "APIToolkit: error publishing message to pubsub, Undefined topic",
-          );
+        if (this.#config?.debug) {
+          console.error('APIToolkit: error publishing message to pubsub, Undefined topic');
         }
       }
     };
@@ -78,28 +76,20 @@ export class APIToolkit {
   }
 
   static async NewClient(config: Config) {
-    let {
-      rootURL = "https://app.apitoolkit.io",
-      clientMetadata,
-    } = config;
+    let { rootURL = 'https://app.apitoolkit.io', clientMetadata } = config;
 
     let pubsubClient;
-    if (clientMetadata == null || config.apiKey != "") {
+    if (clientMetadata == null || config.apiKey != '') {
       clientMetadata = await this.getClientMetadata(rootURL, config.apiKey);
       pubsubClient = new PubSub({
         projectId: clientMetadata.pubsub_project_id,
-        authClient: new PubSub().auth.fromJSON(
-          clientMetadata.pubsub_push_service_account,
-        ),
+        authClient: new PubSub().auth.fromJSON(clientMetadata.pubsub_push_service_account),
       });
     }
 
-    const {
-      topic_id,
-      project_id,
-    } = clientMetadata;
+    const { topic_id, project_id } = clientMetadata;
     if (config.debug) {
-      console.log("apitoolkit:  initialized successfully");
+      console.log('apitoolkit:  initialized successfully');
       console.dir(pubsubClient);
     }
 
@@ -111,40 +101,42 @@ export class APIToolkit {
     await this.#pubsub?.close();
   }
 
-  static async getClientMetadata(rootURL: string, apiKey: string) {
-    const resp = await fetch(rootURL + "/api/client_metadata", {
-      method: "GET",
+  static getClientMetadata(rootURL: string, apiKey: string) {
+    const resp = fetch(rootURL + '/api/client_metadata', {
+      method: 'GET',
       headers: {
-        Authorization: "Bearer " + apiKey,
-        Accept: "application/json",
+        Authorization: 'Bearer ' + apiKey,
+        Accept: 'application/json',
       },
     });
-    if (!resp.ok)
-      throw new Error(
-        `Error getting apitoolkit client_metadata ${resp.status}`,
-      );
-    return (await resp.json()) as ClientMetadata;
+    if (!resp.ok) throw new Error(`Error getting apitoolkit client_metadata ${resp.status}`);
+    return (resp.json()) as ClientMetadata;
   }
 
-  public expressMiddleware(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ) {
-    asyncLocalStorage.run(new Map(), () => {
-      asyncLocalStorage.getStore()!.set("AT_client", this);
-      asyncLocalStorage.getStore()!.set("AT_project_id", this.#project_id);
-      asyncLocalStorage.getStore()!.set("AT_config", this.#config);
-      asyncLocalStorage.getStore()!.set("AT_errors", []);
-      const msg_id: string = uuidv4();
-      asyncLocalStorage.getStore()!.set("AT_msg_id", msg_id);
+  public expressMiddleware(req: Request, res: Response, next: NextFunction) {
+    if (!this.#project_id) {
+      // If APItoolkit wasnt initialized correctly, esp using Async initializer, then log error
+      console.log(
+        'APIToolkit: expressMiddleware called, but apitoolkit was not correctly setup. Doing nothing.'
+      );
+      next();
+      return;
+    }
 
-      if (this.#config.debug) {
-        console.log("APIToolkit: expressMiddleware called");
+    asyncLocalStorage.run(new Map(), () => {
+      asyncLocalStorage.getStore()!.set('AT_client', this);
+      asyncLocalStorage.getStore()!.set('AT_project_id', this.#project_id);
+      asyncLocalStorage.getStore()!.set('AT_config', this.#config);
+      asyncLocalStorage.getStore()!.set('AT_errors', []);
+      const msg_id: string = uuidv4();
+      asyncLocalStorage.getStore()!.set('AT_msg_id', msg_id);
+
+      if (this.#config?.debug) {
+        console.log('APIToolkit: expressMiddleware called');
       }
 
       const start_time = process.hrtime.bigint();
-      let respBody: any = "";
+      let respBody: any = '';
       const oldSend = res.send;
       res.send = (val) => {
         respBody = val;
@@ -152,23 +144,22 @@ export class APIToolkit {
       };
 
       const onRespFinished =
-        (topic: Topic | undefined, req: Request, res: Response) =>
-        (err: any) => {
-          res.removeListener("close", onRespFinished(topic, req, res));
-          res.removeListener("error", onRespFinished(topic, req, res));
-          res.removeListener("finish", onRespFinished(topic, req, res));
+        (topic: Topic | undefined, req: Request, res: Response) => (err: any) => {
+          res.removeListener('close', onRespFinished(topic, req, res));
+          res.removeListener('error', onRespFinished(topic, req, res));
+          res.removeListener('finish', onRespFinished(topic, req, res));
 
-          let reqBody = "";
+          let reqBody = '';
           if (req.body) {
             try {
-              if (req.is("multipart/form-data")) {
+              if (req.is('multipart/form-data')) {
                 if (req.file) {
                   req.body[req.file.fieldname] = `[${req.file.mimetype}_FILE]`;
                 } else if (req.files) {
                   if (!Array.isArray(req.files)) {
                     for (const file in req.files) {
                       req.body[file] = (req.files[file] as any).map(
-                        (f: any) => `[${f.mimetype}_FILE]`,
+                        (f: any) => `[${f.mimetype}_FILE]`
                       );
                     }
                   } else {
@@ -184,34 +175,36 @@ export class APIToolkit {
             }
           }
 
-          const errors = asyncLocalStorage.getStore()?.get("AT_errors") ?? [];
-          const payload = buildPayload(
-            start_time,
-            req,
-            res,
-            reqBody,
-            respBody,
-            this.#config.redactRequestBody ?? [],
-            this.#config.redactResponseBody ?? [],
-            this.#config.redactHeaders ?? [],
-            this.#project_id,
-            errors,
-            this.#config.serviceVersion,
-            this.#config.tags ?? [],
-            msg_id,
-            undefined,
-          );
+          const errors = asyncLocalStorage.getStore()?.get('AT_errors') ?? [];
+          if (this.#project_id) {
+            const payload = buildPayload(
+              start_time,
+              req,
+              res,
+              reqBody,
+              respBody,
+              this.#config?.redactRequestBody ?? [],
+              this.#config?.redactResponseBody ?? [],
+              this.#config?.redactHeaders ?? [],
+              this.#project_id,
+              errors,
+              this.#config?.serviceVersion,
+              this.#config?.tags ?? [],
+              msg_id,
+              undefined
+            );
 
-          if (this.#config.debug) {
-            console.log("APIToolkit: publish prepared payload ");
-            console.dir(payload);
+            if (this.#config?.debug) {
+              console.log('APIToolkit: publish prepared payload ');
+              console.dir(payload);
+            }
+            this.publishMessage(payload);
           }
-          this.publishMessage(payload);
         };
 
       const onRespFinishedCB = onRespFinished(this.#topic, req, res);
-      res.on("finish", onRespFinishedCB);
-      res.on("error", onRespFinishedCB);
+      res.on('finish', onRespFinishedCB);
+      res.on('error', onRespFinishedCB);
       // res.on('close', onRespFinishedCB)
 
       try {
@@ -226,7 +219,7 @@ export class APIToolkit {
 export function ReportError(error: any) {
   if (asyncLocalStorage.getStore() == null) {
     console.log(
-      "APIToolkit: ReportError used outside of the APIToolkit middleware's scope. Use the APIToolkitClient.ReportError instead, if you're not in a web context.",
+      "APIToolkit: ReportError used outside of the APIToolkit middleware's scope. Use the APIToolkitClient.ReportError instead, if you're not in a web context."
     );
     return Promise.reject(error);
   }
@@ -238,9 +231,9 @@ export function ReportError(error: any) {
 
   const [nError, _internalFrames] = resp;
   const atError = buildError(nError);
-  const errList: ATError[] = asyncLocalStorage.getStore()!.get("AT_errors");
+  const errList: ATError[] = asyncLocalStorage.getStore()!.get('AT_errors');
   errList.push(atError);
-  asyncLocalStorage.getStore()!.set("AT_errors", errList);
+  asyncLocalStorage.getStore()!.set('AT_errors', errList);
 }
 
 // Recursively unwraps an error and returns the original cause.
@@ -265,15 +258,15 @@ function normaliseError(maybeError: any): [Error, number] | undefined {
   // tolerateNonErrors option to ensure that the resulting error communicates as
   // such.
   switch (typeof maybeError) {
-    case "string":
-    case "number":
-    case "boolean":
+    case 'string':
+    case 'number':
+    case 'boolean':
       error = new Error(String(maybeError));
       internalFrames += 1;
       break;
-    case "function":
+    case 'function':
       return;
-    case "object":
+    case 'object':
       if (maybeError !== null && isError(maybeError)) {
         error = maybeError;
       } else if (maybeError !== null && hasNecessaryFields(maybeError)) {
@@ -293,16 +286,16 @@ function normaliseError(maybeError: any): [Error, number] | undefined {
 }
 
 const hasNecessaryFields = (error: any): boolean =>
-  (typeof error.name === "string" || typeof error.errorClass === "string") &&
-  (typeof error.message === "string" || typeof error.errorMessage === "string");
+  (typeof error.name === 'string' || typeof error.errorClass === 'string') &&
+  (typeof error.message === 'string' || typeof error.errorMessage === 'string');
 
 function isError(value: any): boolean {
   switch (Object.prototype.toString.call(value)) {
-    case "[object Error]":
+    case '[object Error]':
       return true;
-    case "[object Exception]":
+    case '[object Exception]':
       return true;
-    case "[object DOMException]":
+    case '[object DOMException]':
       return true;
     default:
       return value instanceof Error;
@@ -321,7 +314,7 @@ function buildError(err: Error): ATError {
     message: err.message,
     root_error_type: rootErrorType,
     root_error_message: rootError.message,
-    stack_trace: err.stack ?? "",
+    stack_trace: err.stack ?? '',
   };
 }
 
