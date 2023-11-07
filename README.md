@@ -63,14 +63,14 @@ If you're unable to use await at the top level, then you could wrap your apitool
 Also notice the `.default` at the end of the require, to access the default export of the SDK.
 
 ```js
-const APIToolkit = require("apitoolkit-express").default;
+const apitoolkit = require("apitoolkit-express");
 const express = require("express");
 
 const app = express();
 const port = 3000;
 
 (async function () {
-  const apitoolkit = await APIToolkit.NewClient({ apiKey: "<API-KEY>" });
+  const apitoolkit = await apitoolkit.APIToolkit.NewClient({ apiKey: "<API-KEY>" });
   app.use(apitoolkit.expressMiddleware);
 
   app.get("/", (req, res) => {
@@ -90,14 +90,14 @@ While it's possible to mark a field as redacted from the apitoolkit dashboard, t
 To mark fields that should be redacted, simply add them to the apitoolkit config object. Eg:
 
 ```js
-const APIToolkit = require("apitoolkit-express").default;
+const apitoolkit = require("apitoolkit-express");
 const express = require("express");
 
 const app = express();
 const port = 3000;
 
 (async function () {
-  const apitoolkitClient = await APIToolkit.NewClient({
+  const apitoolkitClient = await apitoolkit.APIToolkit.NewClient({
     apiKey: "<API-KEY>",
     redactHeaders: ["Content-Type", "Authorization", "Cookies"], // Specified headers will be redacted
     redactRequestBody: ["$.credit-card.cvv", "$.credit-card.name"], // Specified request bodies fields will be redacted
