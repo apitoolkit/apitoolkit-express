@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       release-type:
-        description: "Release type (one of): patch, minor, major, prepatch, preminor, premajor, prerelease"
+        description: 'Release type (one of): patch, minor, major, prepatch, preminor, premajor, prerelease'
         required: true
 jobs:
   release:
@@ -47,13 +47,7 @@ jobs:
         env:
           APITOOLKIT_KEY: ${{ secrets.APITOOLKIT_KEY }}
 
-<<<<<<< Updated upstream
-      - run: yarn run build
-||||||| constructed merge base
-      - run: yarn run build 
-=======
-      - run: pnpm run build 
->>>>>>> Stashed changes
+      - run: pnpm run build
 
       # Configure Git
       - name: Git configuration

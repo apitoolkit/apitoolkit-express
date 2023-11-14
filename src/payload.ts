@@ -85,7 +85,7 @@ export function buildPayload(
 
   const payload: Payload = {
     duration: Number(process.hrtime.bigint() - start_time),
-    host: req.hostname,
+    host: req.hostname || "",
     method: req.method,
     path_params: pathParams,
     project_id: project_id,
