@@ -34,45 +34,45 @@ export const onResponse =
     redactRequestBody: string[],
     redactResponseBody: string[],
   ) =>
-  (response: AxiosResponse): AxiosResponse => {
-    if (asyncLocalStorage.getStore() == null) {
-      console.log(
-        "APIToolkit: observeAxios used outside of the APIToolkit middleware's scope. Use the APIToolkitClient.observeAxios instead, if you're not in a web context.",
+    (response: AxiosResponse): AxiosResponse => {
+      if (asyncLocalStorage.getStore() == null) {
+        console.log(
+          "APIToolkit: observeAxios used outside of the APIToolkit middleware's scope. Use the APIToolkitClient.observeAxios instead, if you're not in a web context.",
+        );
+        return response;
+      }
+      const req = response.config;
+      const res = response;
+
+      const reqBody = JSON.stringify(req.data || {});
+      const respBody = JSON.stringify(res.data || {});
+      const project_id = asyncLocalStorage.getStore()!.get("AT_project_id");
+      const ATClient = asyncLocalStorage.getStore()!.get("AT_client");
+      const ATConfig: Config = asyncLocalStorage.getStore()!.get("AT_config");
+      const parent_id: string = asyncLocalStorage.getStore()!.get("AT_msg_id");
+
+      const errors: ATError[] = [];
+
+      const payload = buildPayload(
+        response.config.meta.startTime,
+        req,
+        res,
+        reqBody,
+        respBody,
+        redactRequestBody,
+        redactResponseBody,
+        redactHeaderLists,
+        project_id,
+        ATConfig.serviceVersion,
+        errors,
+        ATConfig.tags ?? [],
+        parent_id,
+        urlWildcard,
       );
+
+      ATClient.publishMessage(payload);
       return response;
-    }
-    const req = response.config;
-    const res = response;
-
-    const reqBody = JSON.stringify(req.data || {});
-    const respBody = JSON.stringify(res.data || {});
-    const project_id = asyncLocalStorage.getStore()!.get("AT_project_id");
-    const ATClient = asyncLocalStorage.getStore()!.get("AT_client");
-    const ATConfig: Config = asyncLocalStorage.getStore()!.get("AT_config");
-    const parent_id: string = asyncLocalStorage.getStore()!.get("AT_msg_id");
-
-    const errors: ATError[] = [];
-
-    const payload = buildPayload(
-      response.config.meta.startTime,
-      req,
-      res,
-      reqBody,
-      respBody,
-      redactRequestBody,
-      redactResponseBody,
-      redactHeaderLists,
-      project_id,
-      ATConfig.serviceVersion,
-      errors,
-      ATConfig.tags ?? [],
-      parent_id,
-      urlWildcard,
-    );
-
-    ATClient.publishMessage(payload);
-    return response;
-  };
+    };
 
 export const onResponseError =
   (
@@ -81,49 +81,49 @@ export const onResponseError =
     redactRequestBody: string[],
     redactResponseBody: string[],
   ) =>
-  (error: AxiosError): Promise<AxiosError> => {
-    if (asyncLocalStorage.getStore() == null) {
-      console.log(
-        "APIToolkit: observeAxios used outside of the APIToolkit middleware's scope. Use the APIToolkitClient.observeAxios instead, if you're not in a web context.",
+    (error: AxiosError): Promise<AxiosError> => {
+      if (asyncLocalStorage.getStore() == null) {
+        console.log(
+          "APIToolkit: observeAxios used outside of the APIToolkit middleware's scope. Use the APIToolkitClient.observeAxios instead, if you're not in a web context.",
+        );
+        return Promise.reject(error);
+      }
+
+      const req = error.config;
+      const res = error.response;
+
+      const reqBody = typeof req?.data === "string" ? req.data : JSON.stringify(req?.data || {});
+      const respBody = typeof req?.data === "string" ? res?.data as string : JSON.stringify(res?.data || {});
+      const project_id = asyncLocalStorage.getStore()!.get("AT_project_id");
+      const ATClient: APIToolkit = asyncLocalStorage
+        .getStore()!
+        .get("AT_client");
+      const ATConfig: Config = asyncLocalStorage.getStore()!.get("AT_config");
+      const parent_id: string = asyncLocalStorage.getStore()!.get("AT_msg_id");
+
+      const errors: ATError[] = [];
+
+      const payload = buildPayload(
+        error.config?.meta.startTime ?? process.hrtime.bigint(),
+        error.request,
+        res,
+        reqBody,
+        respBody,
+        redactRequestBody,
+        redactResponseBody,
+        redactHeaderLists,
+        project_id,
+        ATConfig.serviceVersion,
+        errors,
+        ATConfig.tags ?? [],
+        parent_id,
+        urlWildcard,
       );
+
+      ATClient.publishMessage(payload);
+
       return Promise.reject(error);
-    }
-
-    const req = error.config;
-    const res = error.response;
-
-    const reqBody = JSON.stringify(req?.data || {});
-    const respBody = JSON.stringify(res?.data || {});
-    const project_id = asyncLocalStorage.getStore()!.get("AT_project_id");
-    const ATClient: APIToolkit = asyncLocalStorage
-      .getStore()!
-      .get("AT_client");
-    const ATConfig: Config = asyncLocalStorage.getStore()!.get("AT_config");
-    const parent_id: string = asyncLocalStorage.getStore()!.get("AT_msg_id");
-
-    const errors: ATError[] = [];
-
-    const payload = buildPayload(
-      error.config?.meta.startTime ?? process.hrtime.bigint(),
-      error.request,
-      res,
-      reqBody,
-      respBody,
-      redactRequestBody,
-      redactResponseBody,
-      redactHeaderLists,
-      project_id,
-      ATConfig.serviceVersion,
-      errors,
-      ATConfig.tags ?? [],
-      parent_id,
-      urlWildcard,
-    );
-
-    ATClient.publishMessage(payload);
-
-    return Promise.reject(error);
-  };
+    };
 
 export function observeAxios(
   axiosInstance: AxiosInstance,
