@@ -44,6 +44,9 @@ dependencies:
   '@types/uuid':
     specifier: ^9.0.6
     version: 9.0.6
+  apitoolkit-js:
+    specifier: ^2.0.1
+    version: 2.0.1
   axios:
     specifier: ^1.6.0
     version: 1.6.0
@@ -1465,6 +1468,15 @@ packages:
       picomatch: 2.3.1
     dev: true
 
+  /apitoolkit-js@2.0.1:
+    resolution: {integrity: sha512-mcfR4SZi0snPwccCQetidXlK9Qr4otJDSuH70ewXoqbqxGBnNdprTA0Gn4CWDvZ2UlKMkF+FNTCSAquSdR2zPg==}
+    dependencies:
+      axios: 1.6.2
+      jsonpath: 1.1.1
+    transitivePeerDependencies:
+      - debug
+    dev: false
+
   /append-field@1.0.0:
     resolution: {integrity: sha512-klpgFSWLW1ZEs8svjfb7g4qWY0YS5imI82dTg+QahUvJ8YqAY0P10Uk8tTyh9ZGuYEZEMaeJYCF5BFuX552hsw==}
     dev: false
@@ -1568,6 +1580,16 @@ packages:
 
   /axios@1.6.0:
     resolution: {integrity: sha512-EZ1DYihju9pwVB+jg67ogm+Tmqc6JmhamRN6I4Zt8DfZu5lbcQGw3ozH9lFejSJgs/ibaef3A9PMXPLeefFGJg==}
+    dependencies:
+      follow-redirects: 1.15.3
+      form-data: 4.0.0
+      proxy-from-env: 1.1.0
+    transitivePeerDependencies:
+      - debug
+    dev: false
+
+  /axios@1.6.2:
+    resolution: {integrity: sha512-7i24Ri4pmDRfJTR7LDBhsOTtcm+9kjX5WiY1X3wIisx6G9So3pfMkEiU7emUBe46oceVImccTEM3k6C5dbVW8A==}
     dependencies:
       follow-redirects: 1.15.3
       form-data: 4.0.0

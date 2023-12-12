@@ -1,10 +1,16 @@
-import { Payload } from "../payload";
 import { APIKEY, EmptyClientMetadata } from "./apitoolkit.test";
-import APIToolkit, { ReportError } from "../apitoolkit";
+import APIToolkit, { Payload } from "../apitoolkit";
 import request from "supertest";
 import express, { Request, Response } from "express";
 import axios, { AxiosResponse } from "axios";
-import { observeAxios } from "../axios";
+import { observeAxios, ReportError } from "apitoolkit-js";
+
+declare module "axios" {
+  export interface InternalAxiosRequestConfig {
+    meta: any;
+  }
+}
+
 
 describe("Axios Interceptors", () => {
   let server: any;
