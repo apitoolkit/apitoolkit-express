@@ -59,29 +59,27 @@ app.listen(port, () => {
 });
 ```
 
-If you're unable to use await at the top level, then you could wrap your apitoolkit and express initialization logic in a closure.
-Also notice the `.default` at the end of the require, to access the default export of the SDK.
-
+Common js:
 ```js
-const apitoolkit = require("apitoolkit-express");
+const { APIToolkit } = require("apitoolkit-express");
 const express = require("express");
 
 const app = express();
 const port = 3000;
+const apitoolkit = APIToolkit.NewClient({
+  apiKey: "<API-KEY>", // Required: API Key generated from apitoolkit dashboard
+});
+app.use(apitoolkit.expressMiddleware);
 
-(async function () {
-  const apitoolkit = await apitoolkit.APIToolkit.NewClient({ apiKey: "<API-KEY>" });
-  app.use(apitoolkit.expressMiddleware);
+app.get("/", (req, res) => {
+  res.send("Hello World!");
+});
 
-  app.get("/", (req, res) => {
-    res.send("Hello World!");
-  });
-
-  app.listen(port, () => {
-    console.log(`Example app listening on port ${port}`);
-  });
-})();
+app.listen(port, () => {
+  console.log(`Example app listening on port ${port}`);
+});
 ```
+
 
 ## Redacting Senstive Fields and Headers
 
@@ -90,29 +88,25 @@ While it's possible to mark a field as redacted from the apitoolkit dashboard, t
 To mark fields that should be redacted, simply add them to the apitoolkit config object. Eg:
 
 ```js
-const apitoolkit = require("apitoolkit-express");
 const express = require("express");
+import APIToolkit from "apitoolkit-express"
 
 const app = express();
 const port = 3000;
 
-(async function () {
-  const apitoolkitClient = await apitoolkit.APIToolkit.NewClient({
-    apiKey: "<API-KEY>",
-    redactHeaders: ["Content-Type", "Authorization", "Cookies"], // Specified headers will be redacted
-    redactRequestBody: ["$.credit-card.cvv", "$.credit-card.name"], // Specified request bodies fields will be redacted
-    redactResponseBody: ["$.message.error"], // Specified response body fields will be redacted
-  });
-  app.use(apitoolkitClient.expressMiddleware);
-
-  app.get("/", (req, res) => {
-    res.send("Hello World!");
-  });
-
-  app.listen(port, () => {
-    console.log(`Example app listening on port ${port}`);
-  });
-})();
+const apitoolkitClient = APIToolkit.NewClient({
+  apiKey: "<API-KEY>",
+  redactHeaders: ["Content-Type", "Authorization", "Cookies"], // Specified headers will be redacted
+  redactRequestBody: ["$.credit-card.cvv", "$.credit-card.name"], // Specified request bodies fields will be redacted
+  redactResponseBody: ["$.message.error"], // Specified response body fields will be redacted
+});
+app.use(apitoolkitClient.expressMiddleware);
+app.get("/", (req, res) => {
+  res.send("Hello World!");
+});
+app.listen(port, () => {
+  console.log(`Example app listening on port ${port}`);
+});
 ```
 
 It is important to note that while the `redactHeaders` config field accepts a list of headers(case insensitive), the `redactRequestBody` and `redactResponseBody` expect a list of JSONPath strings as arguments.
@@ -163,7 +157,8 @@ By executing this procedure, APIToolkit gains access to non-redacted fields and 
 Simply wrap your axios instance with the APIToolkit observeAvios function.
 
 ```typescript
-import { observeAxios } from "apitoolkit/axios";
+import { observeAxios } from "apitoolkit-express";
+import axios from "axios"
 
 const response = await observeAxios(axios).get(`${baseURL}/user_list/active`);
 ```
@@ -171,7 +166,7 @@ const response = await observeAxios(axios).get(`${baseURL}/user_list/active`);
 If you're making requests to endpoints which have variable urlPaths, you should include a wildcard url of the path, so that apitoolkit groups the endpoints correctly for you on the dashboardL:
 
 ```typescript
-import { observeAxios } from "apitoolkit/axios";
+import { observeAxios } from "apitoolkit-express";
 
 const response = await observeAxios(axios, "/users/{user_id}").get(
   `${baseURL}/users/user1234`,
@@ -181,7 +176,9 @@ const response = await observeAxios(axios, "/users/{user_id}").get(
 There are other optional arguments you could pass on to the observeAxios function, eg:
 
 ```typescript
-import { observeAxios } from "apitoolkit/axios";
+import { observeAxios } from "apitoolkit-express";
+import axios from "axios"
+
 
 const redactHeadersList = ["Content-Type", "Authorization"];
 const redactRequestBodyList = ["$.body.bla.bla"];
@@ -206,7 +203,7 @@ If you've used sentry, or rollback, or bugsnag, then you're likely aware of this
 Within the context of a web request, reporting error is as simple as calling the apitoolkit ReportError function.
 
 ```typescript
-import { ReportError } from "apitoolkit";
+import { ReportError } from "apitoolkit-express";
 
 try {
   const response = await observeAxios(axios).get(`${baseURL}/ping`);
@@ -220,6 +217,7 @@ In that case, you can call ReportError, but on the apitoolkit client, instead.
 
 ```js
 import APIToolkit from "apitoolkit-express";
+import axios from "axios"
 
 const apitoolkitClient = APIToolkit.NewClient({ apiKey: "<API-KEY>" });
 
