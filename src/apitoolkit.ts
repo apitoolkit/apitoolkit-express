@@ -1,9 +1,8 @@
 import { PubSub, Topic } from '@google-cloud/pubsub';
+import { asyncLocalStorage, buildPayload } from "apitoolkit-js";
 import { NextFunction, Request, Response } from 'express';
 import fetch from 'sync-fetch';
 import { v4 as uuidv4 } from 'uuid';
-
-import { asyncLocalStorage, buildPayload } from "apitoolkit-js";
 
 export type ATError = {
   when: string; // timestamp

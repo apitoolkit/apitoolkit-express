@@ -5,11 +5,6 @@ import express, { Request, Response } from "express";
 import axios, { AxiosResponse } from "axios";
 import { observeAxios, ReportError } from "apitoolkit-js";
 
-declare module "axios" {
-  export interface InternalAxiosRequestConfig {
-    meta: any;
-  }
-}
 
 
 describe("Axios Interceptors", () => {
