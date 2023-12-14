@@ -45,8 +45,8 @@ dependencies:
     specifier: ^9.0.6
     version: 9.0.6
   apitoolkit-js:
-    specifier: ^2.0.1
-    version: 2.0.1
+    specifier: ^2.0.2
+    version: 2.0.2
   axios:
     specifier: ^1.6.0
     version: 1.6.0
@@ -1468,8 +1468,8 @@ packages:
       picomatch: 2.3.1
     dev: true
 
-  /apitoolkit-js@2.0.1:
-    resolution: {integrity: sha512-mcfR4SZi0snPwccCQetidXlK9Qr4otJDSuH70ewXoqbqxGBnNdprTA0Gn4CWDvZ2UlKMkF+FNTCSAquSdR2zPg==}
+  /apitoolkit-js@2.0.2:
+    resolution: {integrity: sha512-AEPyd4kUKulKC0hSqN60kdG8vNmdhWuzUtC9xTfx4reQgxXHOmpcnRuK1Z0MoBtbfDfJy0MHmX6NS5M48D1OoA==}
     dependencies:
       axios: 1.6.2
       jsonpath: 1.1.1
