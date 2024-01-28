@@ -42,7 +42,6 @@ jobs:
     - name: Install dependencies
       run: pnpm install
 
-    - run: pnpm ci
     - run: pnpm run build --if-present
     - run: pnpm test
       env:
