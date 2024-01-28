@@ -48,7 +48,7 @@ describe("Axios Interceptors", () => {
       res.json({ ping: "pong" });
     });
     app.get("/:slug/test", async (req: Request, res: Response) => {
-      const response: AxiosResponse = await observeAxios(axios as AxiosInstance).get(
+      const response: AxiosResponse = await observeAxios(axios as any).get(
         `${baseURL}/ping`,
       );
       res.json(response.data);
@@ -90,7 +90,7 @@ describe("Axios Interceptors", () => {
     app.get("/:slug/error/test", async (req: Request, res: Response) => {
       try {
         const response: AxiosResponse = await observeAxios(
-          axios as AxiosInstance,
+          axios as any,
           "/test/username").get(`${baseURL}/pingxwrong`);
         res.json(response.data);
       } catch (err) {
