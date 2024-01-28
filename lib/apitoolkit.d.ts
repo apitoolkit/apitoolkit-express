@@ -1,6 +1,6 @@
 import { PubSub } from '@google-cloud/pubsub';
 import { NextFunction, Request, Response } from 'express';
-export type ATError = {
+export declare type ATError = {
     when: string;
     error_type: string;
     root_error_type?: string;
@@ -8,7 +8,7 @@ export type ATError = {
     root_error_message?: string;
     stack_trace: string;
 };
-export type Payload = {
+export declare type Payload = {
     duration: number;
     host: string;
     method: string;
@@ -33,7 +33,7 @@ export type Payload = {
     msg_id?: string;
     parent_id?: string;
 };
-export type Config = {
+export declare type Config = {
     apiKey: string;
     rootURL?: string;
     debug?: boolean;
@@ -44,7 +44,7 @@ export type Config = {
     serviceVersion?: string;
     tags?: string[];
 };
-type ClientMetadata = {
+declare type ClientMetadata = {
     project_id: string;
     pubsub_project_id: string;
     topic_id: string;

@@ -25,7 +25,6 @@ describe("Axios Interceptors", () => {
   });
 
   it("should intercept axios", async () => {
-    return;
     let published = false;
     let pingCalled = true;
     const redactHeadersVar = ["Authorization", "X-SECRET"];
@@ -73,9 +72,8 @@ describe("Axios Interceptors", () => {
 
   it("should intercept axios via responseError", async () => {
     let published = false;
-    let pingCalled = true;
     const redactHeadersVar = ["Authorization", "X-SECRET"];
-    const client = await APIToolkit.NewClient({
+    const client = APIToolkit.NewClient({
       apiKey: APIKEY,
       redactHeaders: redactHeadersVar,
       clientMetadata: EmptyClientMetadata,
@@ -86,23 +84,14 @@ describe("Axios Interceptors", () => {
         oldPublishMsg(payload);
       }
       published = true;
-      console.dir(payload);
     };
 
     app.use(client.expressMiddleware);
-    app.get("/ping", (req: Request, res: Response) => {
-      pingCalled = true;
-      res.json({ ping: "pong" });
-    });
-    app.get("/:slug/test", async (req: Request, res: Response) => {
+    app.get("/:slug/error/test", async (req: Request, res: Response) => {
       try {
         const response: AxiosResponse = await observeAxios(
           axios,
-          "/test/{username}",
-          undefined,
-          undefined,
-          undefined,
-        ).get(`${baseURL}/pingxwrong`);
+          "/test/username").get(`${baseURL}/pingxwrong`);
         res.json(response.data);
       } catch (err) {
         ReportError(err);
@@ -111,7 +100,7 @@ describe("Axios Interceptors", () => {
     });
 
     const response = await request(app)
-      .get("/slug-value/test?param1=abc&param2=123")
+      .get("/slug-value/error/test?param1=abc&param2=123")
       .set("Content-Type", "application/json")
       .set("X-API-KEY", "past-3")
       .send({ data: "resp" });
