@@ -42,7 +42,7 @@ jobs:
     - name: Install dependencies
       run: pnpm install
 
-    - run: pnpm run build --if-present
+    - run: pnpm run build
     - run: pnpm test
       env:
         APITOOLKIT_KEY: ${{ secrets.APITOOLKIT_KEY }}
