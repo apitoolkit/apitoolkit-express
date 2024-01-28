@@ -2,7 +2,7 @@ import { APIKEY, EmptyClientMetadata } from "./apitoolkit.test";
 import APIToolkit, { Payload } from "../apitoolkit";
 import request from "supertest";
 import express, { Request, Response } from "express";
-import axios, { AxiosResponse } from "axios";
+import axios, { AxiosInstance, AxiosResponse } from "axios";
 import { observeAxios, ReportError } from "apitoolkit-js";
 
 
@@ -48,7 +48,7 @@ describe("Axios Interceptors", () => {
       res.json({ ping: "pong" });
     });
     app.get("/:slug/test", async (req: Request, res: Response) => {
-      const response: AxiosResponse = await observeAxios(axios).get(
+      const response: AxiosResponse = await observeAxios(axios as AxiosInstance).get(
         `${baseURL}/ping`,
       );
       res.json(response.data);
@@ -90,7 +90,7 @@ describe("Axios Interceptors", () => {
     app.get("/:slug/error/test", async (req: Request, res: Response) => {
       try {
         const response: AxiosResponse = await observeAxios(
-          axios,
+          axios as AxiosInstance,
           "/test/username").get(`${baseURL}/pingxwrong`);
         res.json(response.data);
       } catch (err) {
