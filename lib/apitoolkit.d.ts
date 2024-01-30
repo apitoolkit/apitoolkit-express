@@ -58,5 +58,6 @@ export declare class APIToolkit {
     close(): Promise<void>;
     static getClientMetadata(rootURL: string, apiKey: string): ClientMetadata;
     expressMiddleware(req: Request, res: Response, next: NextFunction): void;
+    errorHandler(err: any, req: Request, res: Response, next: NextFunction): void;
 }
 export default APIToolkit;
