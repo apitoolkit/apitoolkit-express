@@ -200,30 +200,71 @@ For the other arguments, you can either skip them if at the end, or use undefine
 APIToolkit detects a lot of API issues automatically, but it's also valuable to report and track errors. This helps you associate more details about the backend with a given failing request.
 If you've used sentry, or rollback, or bugsnag, then you're likely aware of this functionality.
 
-Within the context of a web request, reporting error is as simple as calling the apitoolkit ReportError function.
+To enable automatic error reporting, add the APIToolkit `errorHandler` middleware immediately after your app's controllers and APIToolkit will handle all uncaught errors that happened during a request and associate the error to that request.
 
 ```typescript
-import { ReportError } from "apitoolkit-express";
+import {APIToolkit , ReportError } from "apitoolkit-express";
+import express from "express";
+import axios from "axios"
 
-try {
+const app = express();
+const port = 3000;
+const apitoolkitClient= APIToolkit.NewClient({apiKey: "<API-KEY>"});
+app.use(apitoolkitClient.expressMiddleware);
+
+// All controllers should live here
+app.get("/", (req, res) => {
+
+});
+// end of your app's controllers
+
+// The error handler must be before any other error middleware and after all controllers
+app.use(apitoolkitClient.errorHandler)
+```
+
+Or manually report errors within the context of a web request, by calling the ReportError function.
+
+```typescript
+import {APIToolkit , ReportError } from "apitoolkit-express";
+import express from "express";
+import axios from "axios"
+
+const app = express();
+const port = 3000;
+const apitoolkitClient= APIToolkit.NewClient({apiKey: "<API-KEY>"});
+app.use(apitoolkitClient.expressMiddleware);
+
+app.get("/", (req, res) => {
+  try {
   const response = await observeAxios(axios).get(`${baseURL}/ping`);
+  res.send(response);
 } catch (error) {
   ReportError(error);
+  res.send("Something went wrong")
 }
+});
 ```
 
 This works automatically from within a web request which is wrapped by the apitoolkit middleware. But if called from a background job, ReportError will not know how to actually Report the Error.
 In that case, you can call ReportError, but on the apitoolkit client, instead.
 
 ```js
-import APIToolkit from "apitoolkit-express";
+import {APIToolkit , ReportError } from "apitoolkit-express";
+import express from "express";
 import axios from "axios"
 
-const apitoolkitClient = APIToolkit.NewClient({ apiKey: "<API-KEY>" });
+const app = express();
+const port = 3000;
+const apitoolkitClient = APIToolkit.NewClient({apiKey: "<API-KEY>"});
+app.use(apitoolkitClient.expressMiddleware);
 
-try {
+app.get("/", (req, res) => {
+  try {
   const response = await observeAxios(axios).get(`${baseURL}/ping`);
+  res.send(response);
 } catch (error) {
-  apitoolkitClient.ReportError(error);
+  apitoolClient.ReportError(error);
+  res.send("Something went wrong")
 }
+});
 ```
