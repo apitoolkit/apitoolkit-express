@@ -1,5 +1,5 @@
 import { PubSub, Topic } from '@google-cloud/pubsub';
-import { ReportError, asyncLocalStorage, buildPayload } from "apitoolkit-js";
+import { asyncLocalStorage, buildPayload, ReportError } from "apitoolkit-js";
 import { NextFunction, Request, Response } from 'express';
 import fetch from 'sync-fetch';
 import { v4 as uuidv4 } from 'uuid';
@@ -248,10 +248,8 @@ export class APIToolkit {
 
       const onRespFinishedCB = onRespFinished(this.#topic, req, res);
       res.on('finish', onRespFinishedCB);
-      res.on('error', (_err) => {
-        onRespFinishedCB(_err)
-      });
-      res.on('close', onRespFinishedCB)
+      res.on('error', onRespFinishedCB);
+      // res.on('close', onRespFinishedCB)
 
       try {
         next();
@@ -261,7 +259,7 @@ export class APIToolkit {
     });
   }
   public errorHandler(err: any, req: Request, res: Response, next: NextFunction) {
-    ReportError(err)
+    void ReportError(err)
     next(err);
   }
 }

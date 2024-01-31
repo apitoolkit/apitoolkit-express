@@ -1,6 +1,6 @@
 {
   "name": "apitoolkit-express",
-  "version": "1.4.4",
+  "version": "1.5.4",
   "description": "Nodejs SDK for the API Toolkit Monitoring and Reliability platform written in Typescript",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
