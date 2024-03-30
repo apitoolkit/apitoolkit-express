@@ -25,7 +25,7 @@ import { APIToolkit } from 'apitoolkit-express';
 const apitoolkitClient = APIToolkit.NewClient({ apiKey: '<API-KEY>' });
 ```
 
-where `<API-KEY>` is the API key which can be generated from your [apitoolkit.io](apitoolkit.io) accoun
+where `<API-KEY>` is the API key which can be generated from your [apitoolkit.io](apitoolkit.io) account
 
 Next, you can use the apitoolkit middleware for your respective routing library.
 
