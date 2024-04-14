@@ -206,6 +206,30 @@ const response = await observeAxios(
 Note that you can ignore any of these arguments except the first argument which is the axios instance to observe.
 For the other arguments, you can either skip them if at the end, or use undefined as a placeholder.
 
+### Observing request outside incoming request context 
+Monitoring outgoing requests inside an incoming request' context 
+associates both request in the dashboard. You can also monitor 
+outgoing requests outside an incoming requests' context 
+in a background job for example. To achieve this, instead of calling `observeAxios` as a standalone function 
+use the method on the APIToolkit client after initialization 
+
+#### Example 
+```js
+import axios from 'axios'
+import { APIToolkit } from 'apitoolkit-express';
+
+
+const apitoolkitClient = APIToolkit.NewClient({
+  apiKey: '<API_KEY>',
+});
+// using the above initialized client, 
+// you can monitor outgoing requests anywhere in your application.
+
+const response = await apitoolkitClient.observeAxios(axios).get(`${baseURL}/ping`);
+console.log(response.data)
+```
+The above request will show in the log explorer as a standalone outgoing request 
+
 ## Reporting errors to APIToolkit
 
 APIToolkit detects a lot of API issues automatically, but it's also valuable to report and track errors. This helps you associate more details about the backend with a given failing request.
