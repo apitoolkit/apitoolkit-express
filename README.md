@@ -173,16 +173,36 @@ Simply wrap your axios instance with the APIToolkit observeAvios function.
 ```typescript
 import { observeAxios } from 'apitoolkit-express';
 import axios from 'axios';
+import express from 'express';
 
-const response = await observeAxios(axios).get(`${baseURL}/user_list/active`);
+const app = express();
+const apitoolkitClient = APIToolkit.NewClient({ apiKey: '<API-KEY>' });
+app.use(apitoolkitClient.expressMiddleware);
+
+app.get('/', (req, res) => {
+    const response = await observeAxios(axios).get(`${baseURL}/users/123`);
+    res.send(response.data);
+  }
+});
+
 ```
 
 If you're making requests to endpoints which have variable urlPaths, you should include a wildcard url of the path, so that apitoolkit groups the endpoints correctly for you on the dashboardL:
 
 ```typescript
 import { observeAxios } from 'apitoolkit-express';
+import axios from 'axios';
+import express from 'express';
 
-const response = await observeAxios(axios, '/users/{user_id}').get(`${baseURL}/users/user1234`);
+const app = express();
+const apitoolkitClient = APIToolkit.NewClient({ apiKey: '<API-KEY>' });
+app.use(apitoolkitClient.expressMiddleware);
+
+app.get('/', (req, res) => {
+    const response = await observeAxios(axios,'/users/{user_id}').get(`${baseURL}/users/123`);
+    res.send(response.data);
+  }
+});
 ```
 
 There are other optional arguments you could pass on to the observeAxios function, eg:
