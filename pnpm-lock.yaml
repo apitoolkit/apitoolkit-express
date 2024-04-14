@@ -45,8 +45,8 @@ dependencies:
     specifier: ^9.0.6
     version: 9.0.6
   apitoolkit-js:
-    specifier: ^3.2.3
-    version: 3.2.3
+    specifier: ^3.2.5
+    version: 3.2.5
   axios:
     specifier: ^1.6.0
     version: 1.6.0
@@ -1468,10 +1468,10 @@ packages:
       picomatch: 2.3.1
     dev: true
 
-  /apitoolkit-js@3.2.3:
-    resolution: {integrity: sha512-Bzu4HQJR6gfM3JPpSQv8ZvbhqFsv1LI7HB0AprCq9YEtGSmScHgqGzZpJtjTIImsN2mp0gcEz+F1uESPpmUkWg==}
+  /apitoolkit-js@3.2.5:
+    resolution: {integrity: sha512-hc18OaBmKMZlaC+4JD/CIHTVBk3RVAFW2RM062ECVp+h7gd/Eu7XUmTk89tkGynuhY+kbWLsCJvrvU4lKxUDew==}
     dependencies:
-      axios: 1.6.2
+      axios: 1.6.8
       jsonpath: 1.1.1
     transitivePeerDependencies:
       - debug
@@ -1588,10 +1588,10 @@ packages:
       - debug
     dev: false
 
-  /axios@1.6.2:
-    resolution: {integrity: sha512-7i24Ri4pmDRfJTR7LDBhsOTtcm+9kjX5WiY1X3wIisx6G9So3pfMkEiU7emUBe46oceVImccTEM3k6C5dbVW8A==}
+  /axios@1.6.8:
+    resolution: {integrity: sha512-v/ZHtJDU39mDpyBoFVkETcd/uNdxrWRrg3bKpOKzXFA6Bvqopts6ALSMU3y6ijYxbw2B+wPrIv46egTzJXCLGQ==}
     dependencies:
-      follow-redirects: 1.15.3
+      follow-redirects: 1.15.6
       form-data: 4.0.0
       proxy-from-env: 1.1.0
     transitivePeerDependencies:
@@ -2617,6 +2617,16 @@ packages:
 
   /follow-redirects@1.15.3:
     resolution: {integrity: sha512-1VzOtuEM8pC9SFU1E+8KfTjZyMztRsgEfwQl44z8A25uy13jSzTj6dyK2Df52iV0vgHCfBwLhDWevLn95w5v6Q==}
+    engines: {node: '>=4.0'}
+    peerDependencies:
+      debug: '*'
+    peerDependenciesMeta:
+      debug:
+        optional: true
+    dev: false
+
+  /follow-redirects@1.15.6:
+    resolution: {integrity: sha512-wWN62YITEaOpSK584EZXJafH1AGpO8RVgElfkuXbTOrPX4fIfOyEpW/CsiNd8JdYrAoOvafRTOEnvsO++qCqFA==}
     engines: {node: '>=4.0'}
     peerDependencies:
       debug: '*'
