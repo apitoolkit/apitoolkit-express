@@ -59,6 +59,10 @@ export declare class APIToolkit {
     static NewClient(config: Config): APIToolkit;
     close(): Promise<void>;
     static getClientMetadata(rootURL: string, apiKey: string): ClientMetadata;
+    getConfig(): {
+        project_id: string;
+        config: Config;
+    };
     observeAxios(axiosInstance: AxiosInstance, urlWildcard?: string | undefined, redactHeaders?: string[] | undefined, redactRequestBody?: string[] | undefined, redactResponseBody?: string[] | undefined): import("axios").AxiosInstance;
     ReportError: typeof ReportError;
     expressMiddleware(req: Request, res: Response, next: NextFunction): void;

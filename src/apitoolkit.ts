@@ -1,5 +1,5 @@
 import { PubSub, Topic } from '@google-cloud/pubsub';
-import { asyncLocalStorage, buildPayload, observeAxios,ReportError  } from 'apitoolkit-js';
+import { asyncLocalStorage, buildPayload, observeAxios, ReportError } from 'apitoolkit-js';
 import { AxiosInstance } from 'axios';
 import { NextFunction, Request, Response } from 'express';
 import fetch from 'sync-fetch';
@@ -135,6 +135,10 @@ export class APIToolkit {
     return resp.json() as ClientMetadata;
   }
 
+  public getConfig() {
+    return { project_id: this.#project_id, config: this.#config };
+  }
+
   public observeAxios(
     axiosInstance: AxiosInstance,
     urlWildcard?: string | undefined,
@@ -142,7 +146,15 @@ export class APIToolkit {
     redactRequestBody?: string[] | undefined,
     redactResponseBody?: string[] | undefined
   ) {
-    return observeAxios(axiosInstance as any, urlWildcard, redactHeaders, redactRequestBody, redactResponseBody, true);
+    return observeAxios(
+      axiosInstance as any,
+      urlWildcard,
+      redactHeaders,
+      redactRequestBody,
+      redactResponseBody,
+      true,
+      this
+    );
   }
   public ReportError = ReportError;
 
