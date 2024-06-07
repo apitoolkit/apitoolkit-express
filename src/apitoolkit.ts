@@ -1,10 +1,9 @@
 import { PubSub, Topic } from '@google-cloud/pubsub';
 import { asyncLocalStorage, buildPayload, observeAxios, ReportError } from 'apitoolkit-js';
-import { AxiosInstance } from 'axios';
+import axios, { AxiosStatic, AxiosInstance } from 'axios';
 import { NextFunction, Request, Response } from 'express';
 import fetch from 'sync-fetch';
 import { v4 as uuidv4 } from 'uuid';
-
 export type ATError = {
   when: string; // timestamp
   error_type: string;
@@ -140,7 +139,7 @@ export class APIToolkit {
   }
 
   public observeAxios(
-    axiosInstance: AxiosInstance,
+    axiosInstance: AxiosStatic,
     urlWildcard?: string | undefined,
     redactHeaders?: string[] | undefined,
     redactRequestBody?: string[] | undefined,
