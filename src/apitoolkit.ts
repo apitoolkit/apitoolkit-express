@@ -1,6 +1,6 @@
 import { PubSub, Topic } from '@google-cloud/pubsub';
-import { asyncLocalStorage, buildPayload, observeAxios, ReportError } from 'apitoolkit-js';
-import axios, { AxiosStatic, AxiosInstance } from 'axios';
+import { asyncLocalStorage, buildPayload, observeAxios, observeAxiosGlobal, ReportError } from 'apitoolkit-js';
+import { AxiosInstance, AxiosStatic } from 'axios';
 import { NextFunction, Request, Response } from 'express';
 import fetch from 'sync-fetch';
 import { v4 as uuidv4 } from 'uuid';
@@ -49,6 +49,7 @@ export type Config = {
   clientMetadata?: ClientMetadata;
   serviceVersion?: string;
   tags?: string[];
+  moitorAxios?: AxiosInstance;
 };
 
 type ClientMetadata = {
@@ -93,6 +94,9 @@ export class APIToolkit {
         }
       }
     };
+    if (config.moitorAxios) {
+      observeAxiosGlobal(config.moitorAxios as any);
+    }
     this.expressMiddleware = this.expressMiddleware.bind(this);
   }
 

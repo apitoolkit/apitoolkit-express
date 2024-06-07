@@ -1,6 +1,6 @@
 import { PubSub } from '@google-cloud/pubsub';
 import { ReportError } from 'apitoolkit-js';
-import { AxiosInstance } from 'axios';
+import { AxiosInstance, AxiosStatic } from 'axios';
 import { NextFunction, Request, Response } from 'express';
 export type ATError = {
     when: string;
@@ -45,6 +45,7 @@ export type Config = {
     clientMetadata?: ClientMetadata;
     serviceVersion?: string;
     tags?: string[];
+    moitorAxios?: AxiosInstance;
 };
 type ClientMetadata = {
     project_id: string;
@@ -63,7 +64,7 @@ export declare class APIToolkit {
         project_id: string;
         config: Config;
     };
-    observeAxios(axiosInstance: AxiosInstance, urlWildcard?: string | undefined, redactHeaders?: string[] | undefined, redactRequestBody?: string[] | undefined, redactResponseBody?: string[] | undefined): import("axios").AxiosInstance;
+    observeAxios(axiosInstance: AxiosStatic, urlWildcard?: string | undefined, redactHeaders?: string[] | undefined, redactRequestBody?: string[] | undefined, redactResponseBody?: string[] | undefined): AxiosInstance;
     ReportError: typeof ReportError;
     expressMiddleware(req: Request, res: Response, next: NextFunction): void;
     errorHandler(err: any, req: Request, res: Response, next: NextFunction): void;
