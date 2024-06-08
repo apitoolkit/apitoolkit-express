@@ -164,13 +164,11 @@ app.listen(3000, () => {
 });
 ```
 
-By executing this procedure, APIToolkit gains access to non-redacted fields and files, thereby enhancing the precision of monitoring and documentation processes. This method ensures that all necessary data is accessible and correctly relayed to APIToolkit for thorough analysis and documentation.
-
 ## Using APIToolkit to Monitor Axios-Based Outgoing Requests
 
 ### Global Monitoring of Axios Requests
 
-To enable global monitoring of all Axios requests with APIToolkit, import the Axios instance into the `NewClient` options.
+To enable global monitoring of all Axios requests with APIToolkit, add you `axios` import into the `NewClient` options.
 
 Example:
 
@@ -192,7 +190,7 @@ app.get('/', async (req, res) => {
 
 ### Monitoring a Specific Axios Request
 
-To monitor a specific Axios request, use the `observeAxios` function from APIToolkit. This approach offers greater flexibility, such as specifying URL path patterns for requests with dynamic routes.
+To monitor a specific Axios request, use the `observeAxios` function from APIToolkit. This approach offers greater flexibility, such as specifying URL path patterns for requests with dynamic paths.
 
 Example:
 
@@ -212,7 +210,9 @@ app.get('/', async (req, res) => {
 });
 ```
 
-By following these steps, you can efficiently monitor your Axios requests using APIToolkit, whether you want to observe all requests globally or just specific ones.
+By following these steps, you can efficiently monitor your `axios` requests using APIToolkit, whether you want to observe all requests globally or just specific ones.
+
+### Monitoring request with dynamic paths
 
 If you're making requests to endpoints which have variable urlPaths, you should include a wildcard url of the path, so that apitoolkit groups the endpoints correctly for you on the dashboardL:
 
@@ -232,7 +232,7 @@ app.get('/', (req, res) => {
 });
 ```
 
-There are other optional arguments you could pass on to the observeAxios function, eg:
+There are other optional arguments you could pass on to the `observeAxios` function, eg:
 
 ```typescript
 import { observeAxios } from 'apitoolkit-express';
