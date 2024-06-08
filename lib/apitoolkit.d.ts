@@ -45,7 +45,7 @@ export type Config = {
     clientMetadata?: ClientMetadata;
     serviceVersion?: string;
     tags?: string[];
-    moitorAxios?: AxiosInstance;
+    monitorAxios?: AxiosInstance;
 };
 type ClientMetadata = {
     project_id: string;
