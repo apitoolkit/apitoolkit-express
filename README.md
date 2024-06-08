@@ -166,12 +166,38 @@ app.listen(3000, () => {
 
 By executing this procedure, APIToolkit gains access to non-redacted fields and files, thereby enhancing the precision of monitoring and documentation processes. This method ensures that all necessary data is accessible and correctly relayed to APIToolkit for thorough analysis and documentation.
 
-## Using apitoolkit to observe an axios based outgoing request
+## Using APIToolkit to Monitor Axios-Based Outgoing Requests
 
-Simply wrap your axios instance with the APIToolkit observeAvios function.
+### Global Monitoring of Axios Requests
+
+To enable global monitoring of all Axios requests with APIToolkit, import the Axios instance into the `NewClient` options.
+
+Example:
 
 ```typescript
-import { observeAxios } from 'apitoolkit-express';
+import APIToolkit from 'apitoolkit-express';
+import axios from 'axios';
+import express from 'express';
+
+const app = express();
+const apitoolkitClient = APIToolkit.NewClient({ apiKey: '<API-KEY>', monitorAxios: axios });
+app.use(apitoolkitClient.expressMiddleware);
+
+app.get('/', async (req, res) => {
+  // This Axios request will be monitored and logged in the APIToolkit log explorer
+  const response = await axios.get(`${baseURL}/users/123`);
+  res.send(response.data);
+});
+```
+
+### Monitoring a Specific Axios Request
+
+To monitor a specific Axios request, use the `observeAxios` function from APIToolkit. This approach offers greater flexibility, such as specifying URL path patterns for requests with dynamic routes.
+
+Example:
+
+```typescript
+import APIToolkit, { observeAxios } from 'apitoolkit-express';
 import axios from 'axios';
 import express from 'express';
 
@@ -179,13 +205,14 @@ const app = express();
 const apitoolkitClient = APIToolkit.NewClient({ apiKey: '<API-KEY>' });
 app.use(apitoolkitClient.expressMiddleware);
 
-app.get('/', (req, res) => {
-    const response = await observeAxios(axios).get(`${baseURL}/users/123`);
-    res.send(response.data);
-  }
+app.get('/', async (req, res) => {
+  // This specific Axios request will be monitored
+  const response = await observeAxios(axios).get(`${baseURL}/users/123`);
+  res.send(response.data);
 });
-
 ```
+
+By following these steps, you can efficiently monitor your Axios requests using APIToolkit, whether you want to observe all requests globally or just specific ones.
 
 If you're making requests to endpoints which have variable urlPaths, you should include a wildcard url of the path, so that apitoolkit groups the endpoints correctly for you on the dashboardL:
 
@@ -226,29 +253,31 @@ const response = await observeAxios(
 Note that you can ignore any of these arguments except the first argument which is the axios instance to observe.
 For the other arguments, you can either skip them if at the end, or use undefined as a placeholder.
 
-### Observing request outside incoming request context 
-Monitoring outgoing requests inside an incoming request' context 
-associates both request in the dashboard. You can also monitor 
-outgoing requests outside an incoming requests' context 
-in a background job for example. To achieve this, instead of calling `observeAxios` as a standalone function 
-use the method on the APIToolkit client after initialization 
+### Observing request outside incoming request context
 
-#### Example 
+Monitoring outgoing requests inside an incoming request' context
+associates both request in the dashboard. You can also monitor
+outgoing requests outside an incoming requests' context
+in a background job for example. To achieve this, instead of calling `observeAxios` as a standalone function
+use the method on the APIToolkit client after initialization
+
+#### Example
+
 ```js
-import axios from 'axios'
+import axios from 'axios';
 import { APIToolkit } from 'apitoolkit-express';
-
 
 const apitoolkitClient = APIToolkit.NewClient({
   apiKey: '<API_KEY>',
 });
-// using the above initialized client, 
+// using the above initialized client,
 // you can monitor outgoing requests anywhere in your application.
 
 const response = await apitoolkitClient.observeAxios(axios).get(`${baseURL}/ping`);
-console.log(response.data)
+console.log(response.data);
 ```
-The above request will show in the log explorer as a standalone outgoing request 
+
+The above request will show in the log explorer as a standalone outgoing request
 
 ## Reporting errors to APIToolkit
 
