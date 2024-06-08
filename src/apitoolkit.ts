@@ -49,12 +49,7 @@ export type Config = {
   clientMetadata?: ClientMetadata;
   serviceVersion?: string;
   tags?: string[];
-  monitorAxios?: {
-    axios: AxiosInstance;
-    redactHeaders: string[];
-    redactResponseBody: string[];
-    redactRequestBody: string[];
-  };
+  monitorAxios?: AxiosInstance;
 };
 
 type ClientMetadata = {
@@ -100,8 +95,15 @@ export class APIToolkit {
       }
     };
     if (config.monitorAxios) {
-      const { axios, redactHeaders, redactRequestBody, redactResponseBody } = config.monitorAxios;
-      observeAxiosGlobal(axios as any, undefined, redactHeaders, redactRequestBody, redactResponseBody, false, this);
+      observeAxiosGlobal(
+        config.monitorAxios as any,
+        undefined,
+        config.redactHeaders,
+        config.redactRequestBody,
+        config.redactResponseBody,
+        false,
+        this
+      );
     }
     this.expressMiddleware = this.expressMiddleware.bind(this);
   }
