@@ -101,7 +101,6 @@ export class APIToolkit {
         config.redactHeaders,
         config.redactRequestBody,
         config.redactResponseBody,
-        false,
         this
       );
     }
