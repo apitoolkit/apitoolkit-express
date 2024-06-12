@@ -53,6 +53,9 @@ app.get("/", (req, res) => {
   res.json({ hello: "Hello world!" });
 });
 
+// The APItoolkit error handler must be before any other error middleware and after all controllers
+app.use(apitoolkitClient.errorHandler);
+
 app.listen(port, () => console.log("App running on port: " + port));
 ```
 
