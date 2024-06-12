@@ -53,7 +53,6 @@ app.get("/", (req, res) => {
   res.json({ hello: "Hello world!" });
 });
 
-// The APItoolkit error handler must be before any other error middleware and after all controllers
 app.use(apitoolkitClient.errorHandler);
 
 app.listen(port, () => console.log("App running on port: " + port));
@@ -61,7 +60,8 @@ app.listen(port, () => console.log("App running on port: " + port));
 
 > [!NOTE]
 > 
-> The `{ENTER_YOUR_API_KEY_HERE}` demo string should be replaced with the [API key](https://apitoolkit.io/docs/dashboard/settings-pages/api-keys?utm_source=github-sdks) generated from the APItoolkit dashboard.
+> - The `{ENTER_YOUR_API_KEY_HERE}` demo string should be replaced with the [API key](https://apitoolkit.io/docs/dashboard/settings-pages/api-keys?utm_source=github-sdks) generated from the APItoolkit dashboard.
+> - The `apitoolkitClient.errorHandler` must be after all controllers and before any other error middleware.
 
 <br />
 
