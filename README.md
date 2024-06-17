@@ -43,6 +43,8 @@ import axios from "axios";
 const app = express();
 const port = 3000;
 
+// IMPORTANT: apitoolkitClient must be declared
+// BEFORE all controllers and middleware in your application.
 const apitoolkitClient = APIToolkit.NewClient({ apiKey: "{ENTER_YOUR_API_KEY_HERE}" });
 
 app.use(express.json());
@@ -53,6 +55,9 @@ app.get("/", (req, res) => {
   res.json({ hello: "Hello world!" });
 });
 
+// IMPORTANT: apitoolkitClient.errorHandler must be declared
+// AFTER declaring apitoolkitClient.expressMiddleware
+// and all controllers and BEFORE any other error middleware.
 app.use(apitoolkitClient.errorHandler);
 
 app.listen(port, () => console.log("App running on port: " + port));
