@@ -43,6 +43,8 @@ import axios from "axios";
 const app = express();
 const port = 3000;
 
+// IMPORTANT: apitoolkitClient must be declared
+// BEFORE all controllers and middleware in your application.
 const apitoolkitClient = APIToolkit.NewClient({ apiKey: "{ENTER_YOUR_API_KEY_HERE}" });
 
 app.use(express.json());
@@ -53,6 +55,9 @@ app.get("/", (req, res) => {
   res.json({ hello: "Hello world!" });
 });
 
+// IMPORTANT: apitoolkitClient.errorHandler must be declared
+// AFTER declaring apitoolkitClient.expressMiddleware
+// and all controllers and BEFORE any other error middleware.
 app.use(apitoolkitClient.errorHandler);
 
 app.listen(port, () => console.log("App running on port: " + port));
@@ -74,7 +79,7 @@ app.listen(port, () => console.log("App running on port: " + port));
 To contribute to the development of this SDK or request help from the community and our team, kindly do any of the following:
 - Read our [Contributors Guide](https://github.com/apitoolkit/.github/blob/main/CONTRIBUTING.md).
 - Join our community [Discord Server](https://discord.gg/dEB6EjQnKB).
-- Create a [new issue](https://github.com/apitoolkit/apitoolkit-dotnet/issues/new/choose) in this repository.
+- Create a [new issue](https://github.com/apitoolkit/apitoolkit-express/issues/new/choose) in this repository.
 
 ## License
 
