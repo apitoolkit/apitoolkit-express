@@ -47,6 +47,7 @@ export type Config = {
   redactRequestBody?: string[];
   redactResponseBody?: string[];
   clientMetadata?: ClientMetadata;
+  ignoreEndpoints?: string[];
   serviceVersion?: string;
   tags?: string[];
   monitorAxios?: AxiosInstance;
@@ -201,6 +202,20 @@ export class APIToolkit {
         res.removeListener('error', onRespFinished(topic, req, res));
         res.removeListener('finish', onRespFinished(topic, req, res));
 
+        let url_path = req.route?.path || '';
+
+        const ignoredRoute = this.#config.ignoreEndpoints?.some((e) => {
+          const endpoint = req.method + url_path;
+          return endpoint.toLowerCase().endsWith(e.replace(" ","").toLowerCase());
+        }) || false;
+
+        if (ignoredRoute) {
+          if (this.#config?.debug) {
+            console.log('APIToolkit: ignored endpoint=>', `${req.method} ${url_path}`);
+          }
+          return;
+        }
+
         let reqBody = '';
         if (req.body) {
           try {
@@ -224,7 +239,6 @@ export class APIToolkit {
             reqBody = String(req.body);
           }
         }
-        let url_path = req.route?.path || '';
         if (req.baseUrl && req.baseUrl != '') {
           url_path = req.baseUrl + url_path;
         }
