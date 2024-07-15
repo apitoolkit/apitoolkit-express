@@ -13,7 +13,6 @@
     "prepublishOnly": "pnpm test && pnpm lint",
     "preversion": "pnpm lint",
     "version": "git add -A src",
-    "postversion": "git push && git push --tags",
     "updates": "npx npm-check-updates",
     "updates:minor": "npx npm-check-updates --target minor"
   },

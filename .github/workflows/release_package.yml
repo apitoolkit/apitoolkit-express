@@ -75,6 +75,10 @@ jobs:
           version: ${{ env.NEW_VERSION }}
           operation: release
 
+      # Bump version in package.json
+      - name: Bump version
+        run: npm version ${{ env.NEW_VERSION }} --no-git-tag-version
+
       - name: Create and checkout temporary branch
         run: |
           git branch temp-branch
@@ -84,6 +88,7 @@ jobs:
       - name: Commit CHANGELOG.md and package.json changes and create tag
         run: |
           git add "CHANGELOG.md"
+          git add "package.json"
           git commit -m "chore: release ${{ env.NEW_VERSION }}"
 
       # Push repository changes
