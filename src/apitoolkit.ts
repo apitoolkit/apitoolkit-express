@@ -61,14 +61,19 @@ type ClientMetadata = {
 };
 
 export class APIToolkit {
-  #topicName: string;
+  #topicName: string | undefined;
   #topic: Topic | undefined;
   #pubsub: PubSub | undefined;
-  #project_id: string;
+  #project_id: string | undefined;
   #config: Config;
   publishMessage: (payload: Payload) => void;
 
-  constructor(pubsub: PubSub | undefined, topicName: string, project_id: string, config: Config) {
+  constructor(
+    pubsub: PubSub | undefined,
+    topicName: string | undefined,
+    project_id: string | undefined,
+    config: Config
+  ) {
     this.#topicName = topicName;
     this.#pubsub = pubsub;
     this.#project_id = project_id;
@@ -114,6 +119,9 @@ export class APIToolkit {
     let pubsubClient;
     if (clientMetadata == null || config.apiKey != '') {
       clientMetadata = this.getClientMetadata(rootURL, config.apiKey);
+      if (!clientMetadata) {
+        return new APIToolkit(pubsubClient, undefined, undefined, config);
+      }
       pubsubClient = new PubSub({
         projectId: clientMetadata.pubsub_project_id,
         authClient: new PubSub().auth.fromJSON(clientMetadata.pubsub_push_service_account),
@@ -142,7 +150,14 @@ export class APIToolkit {
         Accept: 'application/json',
       },
     });
-    if (!resp.ok) throw new Error(`Error getting apitoolkit client_metadata ${resp.status}`);
+    if (!resp.ok) {
+      if (resp.status === 401) {
+        throw new Error('APIToolkit: Invalid API Key');
+      } else {
+        console.error(`Error getting apitoolkit client_metadata ${resp.status}`);
+        return;
+      }
+    }
     return resp.json() as ClientMetadata;
   }
 
@@ -170,7 +185,7 @@ export class APIToolkit {
   public ReportError = ReportError;
 
   public expressMiddleware(req: Request, res: Response, next: NextFunction) {
-    if (!this.#project_id) {
+    if (this.#project_id === undefined) {
       // If APItoolkit wasnt initialized correctly, esp using Async initializer, then log error
       console.log('APIToolkit: expressMiddleware called, but apitoolkit was not correctly setup. Doing nothing.');
       next();
@@ -204,10 +219,11 @@ export class APIToolkit {
 
         let url_path = req.route?.path || '';
 
-        const ignoredRoute = this.#config.ignoreEndpoints?.some((e) => {
-          const endpoint = req.method + url_path;
-          return endpoint.toLowerCase().endsWith(e.replace(" ","").toLowerCase());
-        }) || false;
+        const ignoredRoute =
+          this.#config.ignoreEndpoints?.some((e) => {
+            const endpoint = req.method + url_path;
+            return endpoint.toLowerCase().endsWith(e.replace(' ', '').toLowerCase());
+          }) || false;
 
         if (ignoredRoute) {
           if (this.#config?.debug) {
