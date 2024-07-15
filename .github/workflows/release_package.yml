@@ -92,7 +92,7 @@ jobs:
         run: |
           git push origin temp-branch:master
 
-      # Publish version to public repository
+      # Publish version to npm
       - name: Publish
         run: yarn publish --verbose --access public --tag ${{ env.RELEASE_TAG }}
         env:
