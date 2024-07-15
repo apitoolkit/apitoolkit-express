@@ -1,5 +1,8 @@
 name: Release package
 on:
+  push:
+    tags:
+      - 'v'
   workflow_dispatch:
     inputs:
       release-type:
@@ -55,25 +58,18 @@ jobs:
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --global user.name "GitHub Actions"
 
-      # Bump package version
-      # Use tag latest
-      - name: Bump release version
-        if: startsWith(github.event.inputs.release-type, 'pre') != true
-        run: |
-          echo "NEW_VERSION=$(npm --no-git-tag-version version $RELEASE_TYPE)" >> $GITHUB_ENV
-          echo "RELEASE_TAG=latest" >> $GITHUB_ENV
-        env:
-          RELEASE_TYPE: ${{ github.event.inputs.release-type }}
+      # Extract version from tag
+      - name: Get version from tag
+        run: echo "NEW_VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
 
-      # Bump package pre-release version
-      # Use tag beta for pre-release versions
-      - name: Bump pre-release version
-        if: startsWith(github.event.inputs.release-type, 'pre')
+      # Determine if it's a pre-release
+      - name: Check if pre-release
         run: |
-          echo "NEW_VERSION=$(npm --no-git-tag-version --preid=beta version $RELEASE_TYPE
-          echo "RELEASE_TAG=beta" >> $GITHUB_ENV
-        env:
-          RELEASE_TYPE: ${{ github.event.inputs.release-type }}
+          if [[ ${{ env.NEW_VERSION }} == *"-"* ]]; then
+            echo "RELEASE_TAG=beta" >> $GITHUB_ENV
+          else
+            echo "RELEASE_TAG=latest" >> $GITHUB_ENV
+          fi
 
       # Update changelog unreleased section with new version
       - name: Update changelog
@@ -86,10 +82,8 @@ jobs:
       # Commit changes
       - name: Commit CHANGELOG.md and package.json changes and create tag
         run: |
-          git add "package.json"
           git add "CHANGELOG.md"
           git commit -m "chore: release ${{ env.NEW_VERSION }}"
-          git tag ${{ env.NEW_VERSION }}
 
       # Push repository changes
       - name: Push changes to repository
