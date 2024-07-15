@@ -74,6 +74,11 @@ jobs:
           version: ${{ env.NEW_VERSION }}
           operation: release
 
+      - name: Create and checkout temporary branch
+        run: |
+          git branch temp-branch
+          git checkout temp-branch
+
       # Commit changes
       - name: Commit CHANGELOG.md and package.json changes and create tag
         run: |
@@ -85,7 +90,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git push origin master
+          git push origin temp-branch:master
 
       # Publish version to public repository
       - name: Publish
