@@ -2,7 +2,7 @@ name: Release package
 on:
   push:
     tags:
-      - 'v'
+      - 'v*'
 jobs:
   release:
     runs-on: ubuntu-latest
