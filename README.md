@@ -6,7 +6,7 @@
 ## ExpressJS SDK
 
 [![APItoolkit SDK](https://img.shields.io/badge/APItoolkit-SDK-0068ff?logo=express)](https://github.com/topics/apitoolkit-sdk) [![](https://img.shields.io/npm/v/apitoolkit-express.svg?logo=npm)](https://npmjs.com/package/apitoolkit-express) [![](https://img.shields.io/npm/dw/apitoolkit-express
-)](https://npmjs.com/package/apitoolkit-expresss) [![Join Discord Server](https://img.shields.io/badge/Chat-Discord-7289da)](https://discord.gg/dEB6EjQnKB) [![APItoolkit Docs](https://img.shields.io/badge/Read-Docs-0068ff)](https://apitoolkit.io/docs/sdks/nodejs/expressjs?utm_source=github-sdks) 
+)](https://npmjs.com/package/apitoolkit-expresss) [![Join Discord Server](https://img.shields.io/badge/Chat-Discord-7289da)](https://apitoolkit.io/discord?utm_campaign=devrel&utm_medium=github&utm_source=sdks_readme) [![APItoolkit Docs](https://img.shields.io/badge/Read-Docs-0068ff)](https://apitoolkit.io/docs/sdks/nodejs/expressjs?utm_campaign=devrel&utm_medium=github&utm_source=sdks_readme) 
 
 APItoolkit is an end-to-end API and web services management toolkit for engineers and customer support teams. To integrate your ExpressJS application with APItoolkit, you need to use this SDK to monitor incoming traffic, aggregate the requests, and then deliver them to the APItoolkit's servers.
 
@@ -65,20 +65,20 @@ app.listen(port, () => console.log("App running on port: " + port));
 
 > [!NOTE]
 > 
-> - The `{ENTER_YOUR_API_KEY_HERE}` demo string should be replaced with the [API key](https://apitoolkit.io/docs/dashboard/settings-pages/api-keys?utm_source=github-sdks) generated from the APItoolkit dashboard.
+> - The `{ENTER_YOUR_API_KEY_HERE}` demo string should be replaced with the [API key](https://apitoolkit.io/docs/dashboard/settings-pages/api-keys?utm_campaign=devrel&utm_medium=github&utm_source=sdks_readme) generated from the APItoolkit dashboard.
 > - The `apitoolkitClient.errorHandler` must be after all controllers and before any other error middleware.
 
 <br />
 
 > [!IMPORTANT]
 > 
-> To learn more configuration options (redacting fields, error reporting, outgoing requests, etc.), please read this [SDK documentation](https://apitoolkit.io/docs/sdks/nodejs/expressjs?utm_source=github-sdks).
+> To learn more configuration options (redacting fields, error reporting, outgoing requests, etc.), please read this [SDK documentation](https://apitoolkit.io/docs/sdks/nodejs/expressjs?utm_campaign=devrel&utm_medium=github&utm_source=sdks_readme).
 
 ## Contributing and Help
 
 To contribute to the development of this SDK or request help from the community and our team, kindly do any of the following:
 - Read our [Contributors Guide](https://github.com/apitoolkit/.github/blob/main/CONTRIBUTING.md).
-- Join our community [Discord Server](https://discord.gg/dEB6EjQnKB).
+- Join our community [Discord Server](https://apitoolkit.io/discord?utm_campaign=devrel&utm_medium=github&utm_source=sdks_readme).
 - Create a [new issue](https://github.com/apitoolkit/apitoolkit-express/issues/new/choose) in this repository.
 
 ## License
@@ -89,6 +89,6 @@ This repository is published under the [MIT](LICENSE) license.
 
 <div align="center">
     
-<a href="https://apitoolkit.io?utm_source=github-sdks" target="_blank" rel="noopener noreferrer"><img src="https://github.com/apitoolkit/.github/blob/main/images/icon.png?raw=true" width="40" /></a>
+<a href="https://apitoolkit.io?utm_campaign=devrel&utm_medium=github&utm_source=sdks_readme" target="_blank" rel="noopener noreferrer"><img src="https://github.com/apitoolkit/.github/blob/main/images/icon.png?raw=true" width="40" /></a>
 
 </div>
