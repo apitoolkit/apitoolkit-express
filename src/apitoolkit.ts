@@ -1,7 +1,7 @@
 import { PubSub, Topic } from '@google-cloud/pubsub';
 import { asyncLocalStorage, buildPayload, observeAxios, observeAxiosGlobal, ReportError } from 'apitoolkit-js';
 import { AxiosInstance, AxiosStatic } from 'axios';
-import { NextFunction, Request, Response } from 'express';
+import { Application, NextFunction, Request, Response } from 'express';
 import fetch from 'sync-fetch';
 import { v4 as uuidv4 } from 'uuid';
 export type ATError = {
@@ -255,7 +255,9 @@ export class APIToolkit {
             reqBody = String(req.body);
           }
         }
-        if (req.baseUrl && req.baseUrl != '') {
+        if (url_path == '' && req.method.toLowerCase() !== 'head') {
+          url_path = findMatchedRoute(req.app, req.method, req.originalUrl);
+        } else if (req.baseUrl && req.baseUrl != '') {
           url_path = req.baseUrl + url_path;
         }
         const errors = asyncLocalStorage.getStore()?.get('AT_errors') ?? [];
@@ -305,10 +307,47 @@ export class APIToolkit {
       }
     });
   }
+
   public errorHandler(err: any, req: Request, res: Response, next: NextFunction) {
     void ReportError(err);
     next(err);
   }
 }
+
+export const findMatchedRoute = (app: Application, method: string, url: string): string => {
+  try {
+    let path = url.split('?')[0];
+    const stack = app._router.stack;
+    let final_path = '';
+
+    const gatherRoutes = (stack: any, build_path: string, path: string) => {
+      for (let layer of stack) {
+        if (layer.route) {
+          if (path.startsWith(layer.path)) {
+            const route = layer.route;
+            if (route.methods[method.toLowerCase()]) {
+              const match = layer.path === path || layer.regex.test(path);
+              if (match) {
+                build_path += route.path;
+                final_path = build_path;
+                return;
+              }
+            }
+          }
+        } else if (layer.name === 'router' && layer.handle.stack) {
+          if (path.startsWith(layer.path)) {
+            build_path += layer.path;
+            path = path.replace(layer.path, '');
+            gatherRoutes(layer.handle.stack, build_path, path);
+          }
+        }
+      }
+    };
+    gatherRoutes(stack, '', path);
+    return final_path;
+  } catch (error) {
+    return '';
+  }
+};
 
 export default APIToolkit;
