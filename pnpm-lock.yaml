@@ -49,7 +49,7 @@ importers:
         version: 9.0.8
       apitoolkit-js:
         specifier: ^3.3.2
-        version: 3.3.2
+        version: 3.3.3
       axios:
         specifier: ^1.7.0
         version: 1.7.2
@@ -820,8 +820,8 @@ packages:
     resolution: {integrity: sha512-KMReFUr0B4t+D+OBkjR3KYqvocp2XaSzO55UcB6mgQMd3KbcE+mWTyvVV7D/zsdEbNnV6acZUutkiHQXvTr1Rw==}
     engines: {node: '>= 8'}
 
-  apitoolkit-js@3.3.2:
-    resolution: {integrity: sha512-GaafcqhgbS+EA4hL3GIAyf6UY74pFmJNuI5wPh/YTbFhjX7HtJd13s4xWzsI8rrzJFNnroDRZYHo8cVF1pbipg==}
+  apitoolkit-js@3.3.3:
+    resolution: {integrity: sha512-ZXN9Q8DlQMECnAWXeWk1vr0LtFUDOSY79BAIgnL3i+H9AKrflw8wMVBN086XUFiY3wo/1qE/islYZQzAQhAhqQ==}
 
   append-field@1.0.0:
     resolution: {integrity: sha512-klpgFSWLW1ZEs8svjfb7g4qWY0YS5imI82dTg+QahUvJ8YqAY0P10Uk8tTyh9ZGuYEZEMaeJYCF5BFuX552hsw==}
@@ -3708,7 +3708,7 @@ snapshots:
       normalize-path: 3.0.0
       picomatch: 2.3.1
 
-  apitoolkit-js@3.3.2:
+  apitoolkit-js@3.3.3:
     dependencies:
       axios: 1.7.2
       jsonpath: 1.1.1
