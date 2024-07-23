@@ -316,12 +316,12 @@ export class APIToolkit {
 
 export const findMatchedRoute = (app: Application, method: string, url: string): string => {
   try {
-    let path = url.split('?')[0];
+    const path = url.split('?')[0];
     const stack = app._router.stack;
     let final_path = '';
 
     const gatherRoutes = (stack: any, build_path: string, path: string) => {
-      for (let layer of stack) {
+      for (const layer of stack) {
         if (layer.route) {
           if (path.startsWith(layer.path)) {
             const route = layer.route;
