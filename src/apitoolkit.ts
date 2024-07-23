@@ -258,7 +258,7 @@ export class APIToolkit {
         if (url_path == '' && req.method.toLowerCase() !== 'head') {
           url_path = findMatchedRoute(req.app, req.method, req.originalUrl);
         } else if (req.baseUrl && req.baseUrl != '') {
-          url_path = req.baseUrl + url_path;
+          url_path = findMatchedRoute(req.app, req.method, req.originalUrl);
         }
         const errors = asyncLocalStorage.getStore()?.get('AT_errors') ?? [];
         if (this.#project_id) {
@@ -336,7 +336,7 @@ export const findMatchedRoute = (app: Application, method: string, url: string):
           }
         } else if (layer.name === 'router' && layer.handle.stack) {
           if (path.startsWith(layer.path)) {
-            build_path += layer.path;
+            build_path += transformPath(layer.params, layer.path);
             path = path.replace(layer.path, '');
             gatherRoutes(layer.handle.stack, build_path, path);
           }
@@ -349,5 +349,14 @@ export const findMatchedRoute = (app: Application, method: string, url: string):
     return '';
   }
 };
+
+function transformPath(params: Record<string, string>, path: string): string {
+  let transformedPath = path;
+  for (const [key, value] of Object.entries(params)) {
+    const placeholder = `:${key}`;
+    transformedPath = transformedPath.replace(value, placeholder);
+  }
+  return transformedPath;
+}
 
 export default APIToolkit;
