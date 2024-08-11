@@ -258,7 +258,13 @@ export class APIToolkit {
         if (url_path == '' && req.method.toLowerCase() !== 'head') {
           url_path = findMatchedRoute(req.app, req.method, req.originalUrl);
         } else if (req.baseUrl && req.baseUrl != '') {
-          url_path = findMatchedRoute(req.app, req.method, req.originalUrl);
+          // base url doesn't contain path params
+          if (req.originalUrl.startsWith(req.baseUrl)) {
+            url_path = req.baseUrl + url_path;
+          } else {
+            // base url has path params
+            url_path = findMatchedRoute(req.app, req.method, req.originalUrl);
+          }
         }
         const errors = asyncLocalStorage.getStore()?.get('AT_errors') ?? [];
         if (this.#project_id) {
