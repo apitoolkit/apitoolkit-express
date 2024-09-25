@@ -26,7 +26,6 @@ export type Config = {
   redactRequestBody?: string[];
   redactResponseBody?: string[];
   clientMetadata?: ClientMetadata;
-  ignoreEndpoints?: string[];
   serviceVersion?: string;
   tags?: string[];
   otelInstrumentated: boolean;
@@ -135,26 +134,6 @@ class APIToolkit {
       res.removeListener("error", onRespFinished(req, res));
       res.removeListener("finish", onRespFinished(req, res));
       try {
-        let url_path = req.route?.path || "";
-
-        const ignoredRoute =
-          this.config.ignoreEndpoints?.some((e) => {
-            const endpoint = req.method + url_path;
-            return endpoint
-              .toLowerCase()
-              .endsWith(e.replace(" ", "").toLowerCase());
-          }) || false;
-
-        if (ignoredRoute) {
-          if (this.config?.debug) {
-            console.log(
-              "APIToolkit: ignored endpoint=>",
-              `${req.method} ${url_path}`
-            );
-          }
-          return;
-        }
-
         let reqBody = "";
         if (req.body) {
           try {
@@ -180,6 +159,7 @@ class APIToolkit {
             reqBody = String(req.body);
           }
         }
+        let url_path = req.route?.path || "";
         if (url_path == "" && req.method.toLowerCase() !== "head") {
           url_path = findMatchedRoute(req.app, req.method, req.originalUrl);
         } else if (req.baseUrl && req.baseUrl != "") {
