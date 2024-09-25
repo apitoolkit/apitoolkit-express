@@ -1,0 +1,58 @@
+{
+  "name": "apitoolkit-js-otel",
+  "version": "1.0.0",
+  "description": "",
+  "main": "lib/apitoolkit.js",
+  "types": "lib/apitoolkit.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint . --ext .ts --fix",
+    "test": "jest --config jestconfig.json",
+    "format": "npx prettier --write .",
+    "prepare": "pnpm build",
+    "prepublishOnly": "pnpm test && pnpm lint",
+    "preversion": "pnpm lint",
+    "version": "git add -A src",
+    "updates": "npx npm-check-updates",
+    "updates:minor": "npx npm-check-updates --target minor"
+  },
+  "files": [
+    "lib/**/*"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@eslint/js": "^9.10.0",
+    "@types/express": "^4.17.21",
+    "@types/multer": "^1.4.12",
+    "@types/node": "^22.5.5",
+    "@types/sync-fetch": "^0.4.3",
+    "@typescript-eslint/eslint-plugin": "^8.6.0",
+    "@typescript-eslint/parser": "^8.6.0",
+    "eslint": "^9.10.0",
+    "globals": "^15.9.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.2",
+    "typescript-eslint": "^8.6.0"
+  },
+  "dependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.50.0",
+    "@opentelemetry/exporter-logs-otlp-grpc": "^0.53.0",
+    "@opentelemetry/exporter-trace-otlp-grpc": "^0.53.0",
+    "@opentelemetry/instrumentation-express": "^0.42.0",
+    "@opentelemetry/instrumentation-http": "^0.53.0",
+    "@opentelemetry/resources": "^1.26.0",
+    "@opentelemetry/sdk-node": "^0.53.0",
+    "@opentelemetry/semantic-conventions": "^1.27.0",
+    "apitoolkit-js": "^3.3.3",
+    "express": "^4.21.0",
+    "multer": "1.4.5-lts.1",
+    "sync-fetch": "^0.5.2"
+  }
+}
