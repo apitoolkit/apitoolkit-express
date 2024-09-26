@@ -66,11 +66,11 @@ class APIToolkit {
         const resource = new Resource(defaultAttributes);
 
         const logExporter = new OTLPLogExporter({
-          url: "http://localhost:4317", //grpc endpoint
+          url: "http://otelcol.apitoolkit.io:4317",
         });
 
         const traceExporter = new OTLPTraceExporter({
-          url: "http://localhost:4317", // grpc endpoint
+          url: "http://otelcol.apitoolkit.io:4317",
         });
         const httpInst = new HttpInstrumentation({
           requestHook: (span, request: ClientRequest | IncomingMessage) => {
@@ -114,7 +114,7 @@ class APIToolkit {
       span = this.currentSpan?.shift();
       // default Http auto instrumentation doesn't get reported otherwise
       const tracer = trace.getTracer(this.config.serviceName);
-      const sp = tracer.startSpan("express-request");
+      const sp = tracer.startSpan("apitoolkit-custom-span");
       sp.end();
     }
 
@@ -272,7 +272,6 @@ class APIToolkit {
         return;
       }
     }
-
     return resp.json() as ClientMetadata;
   }
 }

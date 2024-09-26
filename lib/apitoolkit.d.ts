@@ -9,7 +9,6 @@ export type Config = {
     redactRequestBody?: string[];
     redactResponseBody?: string[];
     clientMetadata?: ClientMetadata;
-    ignoreEndpoints?: string[];
     serviceVersion?: string;
     tags?: string[];
     otelInstrumentated: boolean;
