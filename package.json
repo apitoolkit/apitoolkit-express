@@ -1,5 +1,5 @@
 {
-  "name": "apitoolkit-js-otel",
+  "name": "apitoolkit-express",
   "version": "1.0.0",
   "description": "",
   "main": "lib/apitoolkit.js",
