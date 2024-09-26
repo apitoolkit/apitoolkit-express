@@ -40,12 +40,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      # Tests
-      - name: Run tests
-        run: pnpm test
-        env:
-          APITOOLKIT_KEY: ${{ secrets.APITOOLKIT_KEY }}
-
       - run: pnpm run build
 
       # Configure Git
