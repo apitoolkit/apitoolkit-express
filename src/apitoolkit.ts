@@ -37,7 +37,7 @@ type ClientMetadata = {
   topic_id: string;
 };
 
-class APIToolkit {
+export class APIToolkit {
   private otelSDk?: NodeSDK;
   private tracer?: Tracer;
   private config: Config;
@@ -324,5 +324,4 @@ function transformPath(params: Record<string, string>, path: string): string {
   }
   return transformedPath;
 }
-
 export default APIToolkit;
