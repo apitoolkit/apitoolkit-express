@@ -1,5 +1,6 @@
 import { Span } from "@opentelemetry/api";
 import { Application, NextFunction, Request, Response } from "express";
+export { ReportError } from "apitoolkit-js";
 export type Config = {
     apiKey: string;
     serviceName: string;
@@ -18,7 +19,7 @@ type ClientMetadata = {
     pubsub_project_id: string;
     topic_id: string;
 };
-declare class APIToolkit {
+export declare class APIToolkit {
     private otelSDk?;
     private tracer?;
     private config;
@@ -27,6 +28,7 @@ declare class APIToolkit {
     constructor(config: Config, apiKey: string, projectId?: string);
     private updateCurrentSpan;
     handleHTTPRequestSpan(span: Span): void;
+    expressErrorHandler(err: Error, req: Request, res: Response, next: NextFunction): void;
     expressMiddleware(req: Request, res: Response, next: NextFunction): void;
     static NewClient(config: Config): APIToolkit;
     static getClientMetadata(rootURL: string, apiKey: string): ClientMetadata | undefined;

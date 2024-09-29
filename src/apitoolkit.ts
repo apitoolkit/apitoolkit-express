@@ -1,6 +1,8 @@
 import fetch from "sync-fetch";
 import { logs, NodeSDK } from "@opentelemetry/sdk-node";
 import { Resource } from "@opentelemetry/resources";
+import { v4 as uuidv4 } from "uuid";
+
 import { SemanticResourceAttributes } from "@opentelemetry/semantic-conventions";
 import {
   diag,
@@ -16,6 +18,10 @@ import { Application, NextFunction, Request, Response } from "express";
 import { redactFields } from "apitoolkit-js/lib/payload";
 import { HttpInstrumentation } from "@opentelemetry/instrumentation-http";
 import { ClientRequest, IncomingMessage } from "http";
+import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
+import { asyncLocalStorage, ReportError } from "apitoolkit-js";
+import { UndiciInstrumentation } from "@opentelemetry/instrumentation-undici";
+export { ReportError } from "apitoolkit-js";
 
 export type Config = {
   apiKey: string;
@@ -77,8 +83,18 @@ export class APIToolkit {
             this.updateCurrentSpan(span);
           },
         });
+        const undiciInst = new UndiciInstrumentation({
+          responseHook: (span, { request, response }) => {
+            span.setAttribute(
+              "apitoolkit.parent_id",
+              asyncLocalStorage.getStore()?.get("apitoolkit-msg-id")
+            );
+            span.setAttribute("apitoolkit.sdk_type", "JsOutgoing");
+            span.setAttribute("http.request.body", request.body);
+          },
+        });
         const sdk = new NodeSDK({
-          instrumentations: [httpInst],
+          instrumentations: [httpInst, undiciInst],
           resource: resource,
           logRecordProcessors: [new logs.SimpleLogRecordProcessor(logExporter)],
           traceExporter,
@@ -99,6 +115,16 @@ export class APIToolkit {
     this.updateCurrentSpan(span);
   }
 
+  public expressErrorHandler(
+    err: Error,
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
+    ReportError(err);
+    next(err);
+  }
+
   public expressMiddleware(req: Request, res: Response, next: NextFunction) {
     if (this.project_id === undefined) {
       console.log(
@@ -107,138 +133,159 @@ export class APIToolkit {
       next();
       return;
     }
-    let span;
-    if (this.tracer) {
-      span = this.tracer.startSpan("HTTP");
-    } else {
-      span = this.currentSpan?.shift();
-      // default Http auto instrumentation doesn't get reported otherwise
-      const tracer = trace.getTracer(this.config.serviceName);
-      const sp = tracer.startSpan("apitoolkit-custom-span");
-      sp.end();
-    }
 
-    if (this.config?.debug) {
-      console.log("APIToolkit: expressMiddleware called");
-    }
+    asyncLocalStorage.run(new Map(), () => {
+      let span;
+      const store = asyncLocalStorage.getStore();
 
-    let respBody: any = "";
-    const oldSend = res.send;
-    res.send = (val) => {
-      respBody = val;
-      return oldSend.apply(res, [val]);
-    };
+      const msg_id: string = uuidv4();
+      if (this.tracer) {
+        span = this.tracer.startSpan("HTTP");
+      } else {
+        span = this.currentSpan?.shift();
+        // default Http auto instrumentation doesn't get reported otherwise
+        const tracer = trace.getTracer(this.config.serviceName);
+        const sp = tracer.startSpan("apitoolkit-custom-span");
+        sp.end();
+      }
+      if (store) {
+        store.set("apitoolkit-span", span);
+        store.set("apitoolkit-msg-id", msg_id);
+        store.set("AT_errors", []);
+      }
 
-    const onRespFinished = (req: Request, res: Response) => () => {
-      res.removeListener("close", onRespFinished(req, res));
-      res.removeListener("error", onRespFinished(req, res));
-      res.removeListener("finish", onRespFinished(req, res));
-      try {
-        let reqBody = "";
-        if (req.body) {
-          try {
-            if (req.is("multipart/form-data")) {
-              if (req.file) {
-                req.body[req.file.fieldname] = `[${req.file.mimetype}_FILE]`;
-              } else if (req.files) {
-                if (!Array.isArray(req.files)) {
-                  for (const file in req.files) {
-                    req.body[file] = (req.files[file] as any).map(
-                      (f: any) => `[${f.mimetype}_FILE]`
-                    );
-                  }
-                } else {
-                  for (const file of req.files) {
-                    req.body[file.fieldname] = `[${file.mimetype}_FILE]`;
+      if (this.config?.debug) {
+        console.log("APIToolkit: expressMiddleware called");
+      }
+
+      let respBody: any = "";
+      const oldSend = res.send;
+      res.send = (val) => {
+        respBody = val;
+        return oldSend.apply(res, [val]);
+      };
+
+      const onRespFinished = (req: Request, res: Response) => () => {
+        res.removeListener("close", onRespFinished(req, res));
+        res.removeListener("error", onRespFinished(req, res));
+        res.removeListener("finish", onRespFinished(req, res));
+        try {
+          let reqBody = "";
+          if (req.body) {
+            try {
+              if (req.is("multipart/form-data")) {
+                if (req.file) {
+                  req.body[req.file.fieldname] = `[${req.file.mimetype}_FILE]`;
+                } else if (req.files) {
+                  if (!Array.isArray(req.files)) {
+                    for (const file in req.files) {
+                      req.body[file] = (req.files[file] as any).map(
+                        (f: any) => `[${f.mimetype}_FILE]`
+                      );
+                    }
+                  } else {
+                    for (const file of req.files) {
+                      req.body[file.fieldname] = `[${file.mimetype}_FILE]`;
+                    }
                   }
                 }
               }
+              reqBody = JSON.stringify(req.body);
+            } catch {
+              reqBody = String(req.body);
             }
-            reqBody = JSON.stringify(req.body);
-          } catch {
-            reqBody = String(req.body);
           }
-        }
-        let url_path = req.route?.path || "";
-        if (url_path == "" && req.method.toLowerCase() !== "head") {
-          url_path = findMatchedRoute(req.app, req.method, req.originalUrl);
-        } else if (req.baseUrl && req.baseUrl != "") {
-          if (req.originalUrl.startsWith(req.baseUrl)) {
-            url_path = req.baseUrl + url_path;
-          } else {
+          let url_path = req.route?.path || "";
+          if (url_path == "" && req.method.toLowerCase() !== "head") {
             url_path = findMatchedRoute(req.app, req.method, req.originalUrl);
+          } else if (req.baseUrl && req.baseUrl != "") {
+            if (req.originalUrl.startsWith(req.baseUrl)) {
+              url_path = req.baseUrl + url_path;
+            } else {
+              url_path = findMatchedRoute(req.app, req.method, req.originalUrl);
+            }
           }
-        }
-        if (span) {
-          if (url_path !== "") {
-            span.updateName(`${req.method} ${url_path}`);
-          }
-          span.setAttribute("http.route", url_path);
-          span.setAttribute("http.request.method", req.method);
-          span.setAttribute("http.response.status_code", res.statusCode);
-          span.setAttribute(
-            "http.request.query_params",
-            JSON.stringify(req.query)
-          );
-          span.setAttribute(
-            "http.request.path_params",
-            JSON.stringify(req.params)
-          );
-          span.setAttribute("http.apt.sdk_type", "JsExpress");
-          const reqHeaders = Object.entries(req.headers);
+          if (span) {
+            if (url_path !== "") {
+              span.updateName(`${req.method} ${url_path}`);
+            }
+            span.setAttribute("apitoolkit.msg_id", msg_id);
+            span.setAttribute("http.route", url_path);
+            span.setAttribute("http.request.method", req.method);
+            span.setAttribute("http.response.status_code", res.statusCode);
+            span.setAttribute(
+              "http.request.query_params",
+              JSON.stringify(req.query)
+            );
+            span.setAttribute(
+              "http.request.path_params",
+              JSON.stringify(req.params)
+            );
+            span.setAttribute("apitoolkit.sdk_type", "JsExpress");
+            const reqHeaders = Object.entries(req.headers);
 
-          reqHeaders.forEach(([header, value]) => {
-            const isRedacted = this.config.redactHeaders?.some(
-              (h) =>
-                h.toLowerCase() === header.toLowerCase() ||
-                ["cookie", "authorization"].includes(h.toLowerCase())
+            reqHeaders.forEach(([header, value]) => {
+              const isRedacted = this.config.redactHeaders?.some(
+                (h) =>
+                  h.toLowerCase() === header.toLowerCase() ||
+                  ["cookie", "authorization"].includes(h.toLowerCase())
+              );
+              const headerVal = isRedacted
+                ? "[CLIENT_REDACTED]"
+                : String(value);
+              span.setAttribute("http.request.header." + header, headerVal);
+            });
+            const resHeaders = Object.entries(res.getHeaders());
+            resHeaders.forEach(([header, value]) => {
+              const isRedacted = this.config.redactHeaders?.some(
+                (h) =>
+                  h.toLowerCase() === header.toLowerCase() ||
+                  ["cookie", "authorization"].includes(h.toLowerCase())
+              );
+              const headerVal = isRedacted
+                ? "[CLIENT_REDACTED]"
+                : String(value);
+              span.setAttribute("http.response.header." + header, headerVal);
+            });
+            span.setAttribute(
+              "http.request.body",
+              Buffer.from(
+                redactFields(reqBody, this.config.redactRequestBody || [])
+              ).toString("base64")
             );
-            const headerVal = isRedacted ? "[CLIENT_REDACTED]" : String(value);
-            span.setAttribute("http.request.header." + header, headerVal);
-          });
-          const resHeaders = Object.entries(res.getHeaders());
-          resHeaders.forEach(([header, value]) => {
-            const isRedacted = this.config.redactHeaders?.some(
-              (h) =>
-                h.toLowerCase() === header.toLowerCase() ||
-                ["cookie", "authorization"].includes(h.toLowerCase())
+            span.setAttribute(
+              "http.response.body",
+              Buffer.from(
+                redactFields(respBody, this.config.redactRequestBody || [])
+              ).toString("base64")
             );
-            const headerVal = isRedacted ? "[CLIENT_REDACTED]" : String(value);
-            span.setAttribute("http.response.header." + header, headerVal);
-          });
-          span.setAttribute(
-            "http.request.body",
-            Buffer.from(
-              redactFields(reqBody, this.config.redactRequestBody || [])
-            ).toString("base64")
-          );
-          span.setAttribute(
-            "http.response.body",
-            Buffer.from(
-              redactFields(respBody, this.config.redactRequestBody || [])
-            ).toString("base64")
-          );
+            span.setAttribute(
+              "apitoolkit.errors",
+              JSON.stringify(store?.get("AT_errors") || [])
+            );
+          }
+        } catch (error) {
+          if (this.config?.debug) {
+            console.log(error);
+          }
+        } finally {
+          if (this.tracer) {
+            span?.end();
+          }
         }
+      };
+
+      const onRespFinishedCB = onRespFinished(req, res);
+      res.on("finish", onRespFinishedCB);
+      res.on("error", onRespFinishedCB);
+      try {
+        next();
       } catch (error) {
-        if (this.config?.debug) {
-          console.log(error);
-        }
-      } finally {
-        if (this.tracer) {
-          span?.end();
-        }
+        next(error);
       }
-    };
-
-    const onRespFinishedCB = onRespFinished(req, res);
-    res.on("finish", onRespFinishedCB);
-    res.on("error", onRespFinishedCB);
-    try {
-      next();
-    } catch (error) {
-      next(error);
-    }
+    });
   }
+  public ReportError = ReportError;
 
   static NewClient(config: Config) {
     const { rootURL = "https://app.apitoolkit.io", clientMetadata } = config;
