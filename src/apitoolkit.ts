@@ -84,13 +84,24 @@ export class APIToolkit {
           },
         });
         const undiciInst = new UndiciInstrumentation({
+          requestHook: (span, request) => {
+            let headers = request.headers;
+            if (!Array.isArray(headers)) {
+              headers = headers.split("\n").map((h) => h.trim());
+            }
+            headers.forEach((h) => {
+              const [key, value] = h.split(":");
+              span.setAttribute(`request.header.${key}`, value);
+              span.setAttribute("http.request.body", request.body);
+            });
+          },
           responseHook: (span, { request, response }) => {
             span.setAttribute(
               "apitoolkit.parent_id",
               asyncLocalStorage.getStore()?.get("apitoolkit-msg-id")
             );
             span.setAttribute("apitoolkit.sdk_type", "JsOutgoing");
-            span.setAttribute("http.request.body", request.body);
+            // let headers = response.headers;
           },
         });
         const sdk = new NodeSDK({
