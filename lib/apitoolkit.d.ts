@@ -1,5 +1,6 @@
 import { Span } from "@opentelemetry/api";
 import { Application, NextFunction, Request, Response } from "express";
+import { ReportError } from "apitoolkit-js";
 export { ReportError } from "apitoolkit-js";
 export type Config = {
     apiKey: string;
@@ -30,6 +31,7 @@ export declare class APIToolkit {
     handleHTTPRequestSpan(span: Span): void;
     expressErrorHandler(err: Error, req: Request, res: Response, next: NextFunction): void;
     expressMiddleware(req: Request, res: Response, next: NextFunction): void;
+    ReportError: typeof ReportError;
     static NewClient(config: Config): APIToolkit;
     static getClientMetadata(rootURL: string, apiKey: string): ClientMetadata | undefined;
 }

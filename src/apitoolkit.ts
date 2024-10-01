@@ -91,7 +91,7 @@ export class APIToolkit {
             }
             headers.forEach((h) => {
               const [key, value] = h.split(":");
-              span.setAttribute(`request.header.${key}`, value);
+              span.setAttribute(`http.request.header.${key}`, value);
               span.setAttribute("http.request.body", request.body);
             });
           },
@@ -101,7 +101,12 @@ export class APIToolkit {
               asyncLocalStorage.getStore()?.get("apitoolkit-msg-id")
             );
             span.setAttribute("apitoolkit.sdk_type", "JsOutgoing");
-            // let headers = response.headers;
+            let headers = response.headers.map((h) => h.toString());
+            for (let i = 0; i < headers.length - 1; i += 2) {
+              const key = headers[i];
+              const value = headers[i + 1];
+              span.setAttribute(`http.response.header.${key}`, value);
+            }
           },
         });
         const sdk = new NodeSDK({
