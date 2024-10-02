@@ -2,16 +2,8 @@ import fetch from "sync-fetch";
 import { logs, NodeSDK } from "@opentelemetry/sdk-node";
 import { Resource } from "@opentelemetry/resources";
 import { v4 as uuidv4 } from "uuid";
-
 import { SemanticResourceAttributes } from "@opentelemetry/semantic-conventions";
-import {
-  diag,
-  DiagConsoleLogger,
-  DiagLogLevel,
-  Span,
-  trace,
-  Tracer,
-} from "@opentelemetry/api";
+import { diag, DiagConsoleLogger, DiagLogLevel, Span, trace, Tracer } from "@opentelemetry/api";
 import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-grpc";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-grpc";
 import { Application, NextFunction, Request, Response } from "express";
@@ -35,6 +27,7 @@ export type Config = {
   serviceVersion?: string;
   tags?: string[];
   otelInstrumentated: boolean;
+  otelInstrumentations?: any[];
 };
 
 type ClientMetadata = {
@@ -55,15 +48,12 @@ export class APIToolkit {
     if (projectId) {
       this.project_id = projectId;
       if (!config.otelInstrumentated) {
-        const loggerLevel = config.debug
-          ? DiagLogLevel.DEBUG
-          : DiagLogLevel.NONE;
+        const loggerLevel = config.debug ? DiagLogLevel.DEBUG : DiagLogLevel.NONE;
         diag.setLogger(new DiagConsoleLogger(), loggerLevel);
 
         const defaultAttributes = {
           [SemanticResourceAttributes.SERVICE_NAME]: config.serviceName,
-          [SemanticResourceAttributes.SERVICE_VERSION]:
-            config.serviceVersion || "1.0.0",
+          [SemanticResourceAttributes.SERVICE_VERSION]: config.serviceVersion || "1.0.0",
           environment: "production",
           "at-project-id": projectId,
           "at-api-key": apiKey,
@@ -110,9 +100,14 @@ export class APIToolkit {
           },
         });
         const sdk = new NodeSDK({
-          instrumentations: [httpInst, undiciInst],
+          instrumentations: [
+            getNodeAutoInstrumentations({}),
+            httpInst,
+            undiciInst,
+            ...(config.otelInstrumentations ?? []),
+          ],
           resource: resource,
-          logRecordProcessors: [new logs.SimpleLogRecordProcessor(logExporter)],
+          logRecordProcessors: [new logs.BatchLogRecordProcessor(logExporter)],
           traceExporter,
         });
         this.otelSDk = sdk;
@@ -131,22 +126,12 @@ export class APIToolkit {
     this.updateCurrentSpan(span);
   }
 
-  public expressErrorHandler(
-    err: Error,
-    _req: Request,
-    _res: Response,
-    next: NextFunction
-  ) {
+  public expressErrorHandler(err: Error, _req: Request, _res: Response, next: NextFunction) {
     ReportError(err);
     next(err);
   }
-  public errorHandler(
-    err: Error,
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) {
-    return this.expressErrorHandler(err, req, res, next)
+  public errorHandler(err: Error, req: Request, res: Response, next: NextFunction) {
+    return this.expressErrorHandler(err, req, res, next);
   }
 
   public expressMiddleware(req: Request, res: Response, next: NextFunction) {
@@ -237,14 +222,8 @@ export class APIToolkit {
             span.setAttribute("http.route", url_path);
             span.setAttribute("http.request.method", req.method);
             span.setAttribute("http.response.status_code", res.statusCode);
-            span.setAttribute(
-              "http.request.query_params",
-              JSON.stringify(req.query)
-            );
-            span.setAttribute(
-              "http.request.path_params",
-              JSON.stringify(req.params)
-            );
+            span.setAttribute("http.request.query_params", JSON.stringify(req.query));
+            span.setAttribute("http.request.path_params", JSON.stringify(req.params));
             span.setAttribute("apitoolkit.sdk_type", "JsExpress");
             const reqHeaders = Object.entries(req.headers);
 
@@ -254,9 +233,7 @@ export class APIToolkit {
                   h.toLowerCase() === header.toLowerCase() ||
                   ["cookie", "authorization"].includes(h.toLowerCase())
               );
-              const headerVal = isRedacted
-                ? "[CLIENT_REDACTED]"
-                : String(value);
+              const headerVal = isRedacted ? "[CLIENT_REDACTED]" : String(value);
               span.setAttribute("http.request.header." + header, headerVal);
             });
             const resHeaders = Object.entries(res.getHeaders());
@@ -266,27 +243,22 @@ export class APIToolkit {
                   h.toLowerCase() === header.toLowerCase() ||
                   ["cookie", "authorization"].includes(h.toLowerCase())
               );
-              const headerVal = isRedacted
-                ? "[CLIENT_REDACTED]"
-                : String(value);
+              const headerVal = isRedacted ? "[CLIENT_REDACTED]" : String(value);
               span.setAttribute("http.response.header." + header, headerVal);
             });
             span.setAttribute(
               "http.request.body",
-              Buffer.from(
-                redactFields(reqBody, this.config.redactRequestBody || [])
-              ).toString("base64")
+              Buffer.from(redactFields(reqBody, this.config.redactRequestBody || [])).toString(
+                "base64"
+              )
             );
             span.setAttribute(
               "http.response.body",
-              Buffer.from(
-                redactFields(respBody, this.config.redactRequestBody || [])
-              ).toString("base64")
+              Buffer.from(redactFields(respBody, this.config.redactRequestBody || [])).toString(
+                "base64"
+              )
             );
-            span.setAttribute(
-              "apitoolkit.errors",
-              JSON.stringify(store?.get("AT_errors") || [])
-            );
+            span.setAttribute("apitoolkit.errors", JSON.stringify(store?.get("AT_errors") || []));
           }
         } catch (error) {
           if (this.config?.debug) {
@@ -316,11 +288,7 @@ export class APIToolkit {
 
     if (!clientMetadata || config.apiKey != "") {
       const clientMeta = this.getClientMetadata(rootURL, config.apiKey);
-      if (!clientMeta) {
-        return new APIToolkit(config, config.apiKey, undefined);
-      } else {
-        return new APIToolkit(config, config.apiKey, clientMeta.project_id);
-      }
+      return new APIToolkit(config, config.apiKey, clientMeta?.project_id);
     }
     return new APIToolkit(config, config.apiKey, undefined);
   }
@@ -336,22 +304,15 @@ export class APIToolkit {
     if (!resp.ok) {
       if (resp.status === 401) {
         throw new Error("APIToolkit: Invalid API Key");
-      } else {
-        console.error(
-          `Error getting apitoolkit client_metadata ${resp.status}`
-        );
-        return;
       }
+      console.error(`Error getting apitoolkit client_metadata ${resp.status}`);
+      return;
     }
     return resp.json() as ClientMetadata;
   }
 }
 
-export const findMatchedRoute = (
-  app: Application,
-  method: string,
-  url: string
-): string => {
+export const findMatchedRoute = (app: Application, method: string, url: string): string => {
   try {
     const path = url.split("?")[0];
     const stack = app._router.stack;
@@ -360,16 +321,14 @@ export const findMatchedRoute = (
     const gatherRoutes = (stack: any, build_path: string, path: string) => {
       for (const layer of stack) {
         if (layer.route) {
-          if (path.startsWith(layer.path)) {
-            const route = layer.route;
-            if (route.methods[method.toLowerCase()]) {
-              const match = layer.path === path || layer.regex.test(path);
-              if (match) {
-                build_path += route.path;
-                final_path = build_path;
-                return;
-              }
-            }
+          if (
+            path.startsWith(layer.path) &&
+            layer.route.methods[method.toLowerCase()] &&
+            (layer.path === path || layer.regex.test(path))
+          ) {
+            build_path += layer.route.path;
+            final_path = build_path;
+            return;
           }
         } else if (layer.name === "router" && layer.handle.stack) {
           if (path.startsWith(layer.path)) {

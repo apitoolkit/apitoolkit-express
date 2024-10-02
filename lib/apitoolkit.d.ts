@@ -14,6 +14,7 @@ export type Config = {
     serviceVersion?: string;
     tags?: string[];
     otelInstrumentated: boolean;
+    otelInstrumentations?: any[];
 };
 type ClientMetadata = {
     project_id: string;
