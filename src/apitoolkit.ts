@@ -133,12 +133,20 @@ export class APIToolkit {
 
   public expressErrorHandler(
     err: Error,
-    req: Request,
-    res: Response,
+    _req: Request,
+    _res: Response,
     next: NextFunction
   ) {
     ReportError(err);
     next(err);
+  }
+  public errorHandler(
+    err: Error,
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
+    return this.expressErrorHandler(err, req, res, next)
   }
 
   public expressMiddleware(req: Request, res: Response, next: NextFunction) {
