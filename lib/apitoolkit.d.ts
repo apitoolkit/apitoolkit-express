@@ -30,7 +30,7 @@ export declare class APIToolkit {
     private updateCurrentSpan;
     handleHTTPRequestSpan(span: Span): void;
     expressErrorHandler(err: Error, _req: Request, _res: Response, next: NextFunction): void;
-    errorHandler(err: Error, _req: Request, _res: Response, next: NextFunction): void;
+    errorHandler(err: Error, req: Request, res: Response, next: NextFunction): void;
     expressMiddleware(req: Request, res: Response, next: NextFunction): void;
     ReportError: typeof ReportError;
     static NewClient(config: Config): APIToolkit;

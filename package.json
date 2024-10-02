@@ -1,12 +1,12 @@
 {
   "name": "apitoolkit-express",
-  "version": "3.0.2",
+  "version": "3.0.3",
   "description": "",
   "main": "lib/apitoolkit.js",
   "types": "lib/apitoolkit.d.ts",
   "scripts": {
     "build": "tsc",
-    "lint": "eslint . --ext .ts --fix",
+    "lint": "eslint . --fix",
     "test": "jest --config jestconfig.json",
     "format": "npx prettier --write .",
     "prepare": "pnpm build",

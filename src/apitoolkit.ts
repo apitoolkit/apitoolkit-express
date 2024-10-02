@@ -101,7 +101,7 @@ export class APIToolkit {
               asyncLocalStorage.getStore()?.get("apitoolkit-msg-id")
             );
             span.setAttribute("apitoolkit.sdk_type", "JsOutgoing");
-            let headers = response.headers.map((h) => h.toString());
+            const headers = response.headers.map((h) => h.toString());
             for (let i = 0; i < headers.length - 1; i += 2) {
               const key = headers[i];
               const value = headers[i + 1];
