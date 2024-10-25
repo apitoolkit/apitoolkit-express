@@ -1,40 +1,25 @@
 import fetch from "sync-fetch";
-import { logs, NodeSDK } from "@opentelemetry/sdk-node";
-import { Resource } from "@opentelemetry/resources";
 import { v4 as uuidv4 } from "uuid";
 
-import { SemanticResourceAttributes } from "@opentelemetry/semantic-conventions";
-import {
-  diag,
-  DiagConsoleLogger,
-  DiagLogLevel,
-  Span,
-  trace,
-  Tracer,
-} from "@opentelemetry/api";
-import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-grpc";
-import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-grpc";
+import { Span, Tracer } from "@opentelemetry/api";
 import { Application, NextFunction, Request, Response } from "express";
 import { redactFields } from "apitoolkit-js/lib/payload";
-import { HttpInstrumentation } from "@opentelemetry/instrumentation-http";
-import { ClientRequest, IncomingMessage } from "http";
-import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
 import { asyncLocalStorage, ReportError } from "apitoolkit-js";
-import { UndiciInstrumentation } from "@opentelemetry/instrumentation-undici";
 export { ReportError } from "apitoolkit-js";
 
 export type Config = {
   apiKey: string;
-  serviceName: string;
   rootURL?: string;
   debug?: boolean;
   redactHeaders?: string[];
   redactRequestBody?: string[];
   redactResponseBody?: string[];
+  captureRequestBody?: boolean;
+  captureResponseBody?: boolean;
   clientMetadata?: ClientMetadata;
-  serviceVersion?: string;
   tags?: string[];
-  otelInstrumentated: boolean;
+  serviceVersion?: string;
+  tracer: Tracer;
 };
 
 type ClientMetadata = {
@@ -44,91 +29,25 @@ type ClientMetadata = {
 };
 
 export class APIToolkit {
-  private otelSDk?: NodeSDK;
-  private tracer?: Tracer;
+  private tracer: Tracer;
   private config: Config;
   private project_id?: string;
-  private currentSpan: Span[] = [];
+  private apitoolkit_key?: string;
+  private captureRequestBody?: boolean;
+  private captureResponseBody?: boolean;
 
   constructor(config: Config, apiKey: string, projectId?: string) {
     this.config = config;
+    this.tracer = config.tracer;
+    this.captureRequestBody = config.captureRequestBody || false;
+    this.captureResponseBody = config.captureResponseBody || false;
+
     if (projectId) {
       this.project_id = projectId;
-      if (!config.otelInstrumentated) {
-        const loggerLevel = config.debug
-          ? DiagLogLevel.DEBUG
-          : DiagLogLevel.NONE;
-        diag.setLogger(new DiagConsoleLogger(), loggerLevel);
-
-        const defaultAttributes = {
-          [SemanticResourceAttributes.SERVICE_NAME]: config.serviceName,
-          [SemanticResourceAttributes.SERVICE_VERSION]:
-            config.serviceVersion || "1.0.0",
-          environment: "production",
-          "at-project-id": projectId,
-          "at-api-key": apiKey,
-        };
-
-        const resource = new Resource(defaultAttributes);
-
-        const logExporter = new OTLPLogExporter({
-          url: "http://otelcol.apitoolkit.io:4317",
-        });
-
-        const traceExporter = new OTLPTraceExporter({
-          url: "http://otelcol.apitoolkit.io:4317",
-        });
-        const httpInst = new HttpInstrumentation({
-          requestHook: (span, request: ClientRequest | IncomingMessage) => {
-            this.updateCurrentSpan(span);
-          },
-        });
-        const undiciInst = new UndiciInstrumentation({
-          requestHook: (span, request) => {
-            let headers = request.headers;
-            if (!Array.isArray(headers)) {
-              headers = headers.split("\n").map((h) => h.trim());
-            }
-            headers.forEach((h) => {
-              const [key, value] = h.split(":");
-              span.setAttribute(`http.request.header.${key}`, value);
-              span.setAttribute("http.request.body", request.body);
-            });
-          },
-          responseHook: (span, { request, response }) => {
-            span.setAttribute(
-              "apitoolkit.parent_id",
-              asyncLocalStorage.getStore()?.get("apitoolkit-msg-id")
-            );
-            span.setAttribute("apitoolkit.sdk_type", "JsOutgoing");
-            let headers = response.headers.map((h) => h.toString());
-            for (let i = 0; i < headers.length - 1; i += 2) {
-              const key = headers[i];
-              const value = headers[i + 1];
-              span.setAttribute(`http.response.header.${key}`, value);
-            }
-          },
-        });
-        const sdk = new NodeSDK({
-          instrumentations: [httpInst, undiciInst],
-          resource: resource,
-          logRecordProcessors: [new logs.SimpleLogRecordProcessor(logExporter)],
-          traceExporter,
-        });
-        this.otelSDk = sdk;
-        sdk.start();
-      }
+      this.apitoolkit_key = apiKey;
     }
+
     this.expressMiddleware = this.expressMiddleware.bind(this);
-    this.updateCurrentSpan = this.updateCurrentSpan.bind(this);
-  }
-
-  private updateCurrentSpan(span: Span) {
-    this.currentSpan?.push(span);
-  }
-
-  public handleHTTPRequestSpan(span: Span) {
-    this.updateCurrentSpan(span);
   }
 
   public expressErrorHandler(
@@ -151,18 +70,12 @@ export class APIToolkit {
     }
 
     asyncLocalStorage.run(new Map(), () => {
-      let span;
+      let span: Span | undefined;
       const store = asyncLocalStorage.getStore();
 
       const msg_id: string = uuidv4();
       if (this.tracer) {
-        span = this.tracer.startSpan("HTTP");
-      } else {
-        span = this.currentSpan?.shift();
-        // default Http auto instrumentation doesn't get reported otherwise
-        const tracer = trace.getTracer(this.config.serviceName);
-        const sp = tracer.startSpan("apitoolkit-custom-span");
-        sp.end();
+        span = this.tracer.startSpan("apitoolkit-http-span");
       }
       if (store) {
         store.set("apitoolkit-span", span);
@@ -177,7 +90,9 @@ export class APIToolkit {
       let respBody: any = "";
       const oldSend = res.send;
       res.send = (val) => {
-        respBody = val;
+        if (this.captureResponseBody) {
+          respBody = val;
+        }
         return oldSend.apply(res, [val]);
       };
 
@@ -187,7 +102,7 @@ export class APIToolkit {
         res.removeListener("finish", onRespFinished(req, res));
         try {
           let reqBody = "";
-          if (req.body) {
+          if (req.body && this.captureRequestBody) {
             try {
               if (req.is("multipart/form-data")) {
                 if (req.file) {
@@ -222,9 +137,10 @@ export class APIToolkit {
             }
           }
           if (span) {
-            if (url_path !== "") {
-              span.updateName(`${req.method} ${url_path}`);
-            }
+            // if (url_path !== "") {
+            //   span.updateName(`${req.method} ${url_path}`);
+            // }
+            span.setAttribute("at-project-key", this.apitoolkit_key || "");
             span.setAttribute("apitoolkit.msg_id", msg_id);
             span.setAttribute("http.route", url_path);
             span.setAttribute("http.request.method", req.method);
@@ -279,6 +195,11 @@ export class APIToolkit {
               "apitoolkit.errors",
               JSON.stringify(store?.get("AT_errors") || [])
             );
+            span.setAttribute(
+              "apitoolkit.service_version",
+              this.config.serviceVersion || ""
+            );
+            span.setAttribute("apitoolkit.tags", this.config.tags || []);
           }
         } catch (error) {
           if (this.config?.debug) {

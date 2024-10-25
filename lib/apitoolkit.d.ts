@@ -1,19 +1,20 @@
-import { Span } from "@opentelemetry/api";
+import { Tracer } from "@opentelemetry/api";
 import { Application, NextFunction, Request, Response } from "express";
 import { ReportError } from "apitoolkit-js";
 export { ReportError } from "apitoolkit-js";
 export type Config = {
     apiKey: string;
-    serviceName: string;
     rootURL?: string;
     debug?: boolean;
     redactHeaders?: string[];
     redactRequestBody?: string[];
     redactResponseBody?: string[];
+    captureRequestBody?: boolean;
+    captureResponseBody?: boolean;
     clientMetadata?: ClientMetadata;
-    serviceVersion?: string;
     tags?: string[];
-    otelInstrumentated: boolean;
+    serviceVersion?: string;
+    tracer: Tracer;
 };
 type ClientMetadata = {
     project_id: string;
@@ -21,14 +22,13 @@ type ClientMetadata = {
     topic_id: string;
 };
 export declare class APIToolkit {
-    private otelSDk?;
-    private tracer?;
+    private tracer;
     private config;
     private project_id?;
-    private currentSpan;
+    private apitoolkit_key?;
+    private captureRequestBody?;
+    private captureResponseBody?;
     constructor(config: Config, apiKey: string, projectId?: string);
-    private updateCurrentSpan;
-    handleHTTPRequestSpan(span: Span): void;
     expressErrorHandler(err: Error, req: Request, res: Response, next: NextFunction): void;
     expressMiddleware(req: Request, res: Response, next: NextFunction): void;
     ReportError: typeof ReportError;
