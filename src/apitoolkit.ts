@@ -52,12 +52,20 @@ export class APIToolkit {
 
   public expressErrorHandler(
     err: Error,
-    req: Request,
-    res: Response,
+    _req: Request,
+    _res: Response,
     next: NextFunction
   ) {
     ReportError(err);
     next(err);
+  }
+  public errorHandler(
+    err: Error,
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
+    return this.expressErrorHandler(err, req, res, next);
   }
 
   public expressMiddleware(req: Request, res: Response, next: NextFunction) {
@@ -229,11 +237,7 @@ export class APIToolkit {
 
     if (!clientMetadata || config.apiKey != "") {
       const clientMeta = this.getClientMetadata(rootURL, config.apiKey);
-      if (!clientMeta) {
-        return new APIToolkit(config, config.apiKey, undefined);
-      } else {
-        return new APIToolkit(config, config.apiKey, clientMeta.project_id);
-      }
+      return new APIToolkit(config, config.apiKey, clientMeta?.project_id);
     }
     return new APIToolkit(config, config.apiKey, undefined);
   }
@@ -249,12 +253,9 @@ export class APIToolkit {
     if (!resp.ok) {
       if (resp.status === 401) {
         throw new Error("APIToolkit: Invalid API Key");
-      } else {
-        console.error(
-          `Error getting apitoolkit client_metadata ${resp.status}`
-        );
-        return;
       }
+      console.error(`Error getting apitoolkit client_metadata ${resp.status}`);
+      return;
     }
     return resp.json() as ClientMetadata;
   }
@@ -273,16 +274,14 @@ export const findMatchedRoute = (
     const gatherRoutes = (stack: any, build_path: string, path: string) => {
       for (const layer of stack) {
         if (layer.route) {
-          if (path.startsWith(layer.path)) {
-            const route = layer.route;
-            if (route.methods[method.toLowerCase()]) {
-              const match = layer.path === path || layer.regex.test(path);
-              if (match) {
-                build_path += route.path;
-                final_path = build_path;
-                return;
-              }
-            }
+          if (
+            path.startsWith(layer.path) &&
+            layer.route.methods[method.toLowerCase()] &&
+            (layer.path === path || layer.regex.test(path))
+          ) {
+            build_path += layer.route.path;
+            final_path = build_path;
+            return;
           }
         } else if (layer.name === "router" && layer.handle.stack) {
           if (path.startsWith(layer.path)) {
