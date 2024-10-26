@@ -84,10 +84,8 @@ In the configuration above, **only the `apiKey` and `tracer` fields required**, 
 | `captureResponseBody` | default `false`, set to true if you want to capture the response body. |
 :::
 
-```=html
-<hr />
-<a href="https://github.com/apitoolkit/apitoolkit-express" target="_blank" rel="noopener noreferrer" class="w-full btn btn-outline link link-hover">
-    <i class="fa-brands fa-github"></i>
-    Explore the ExpressJS SDK
-</a>
-```
+<br />
+
+> [!IMPORTANT]
+>
+> To learn more configuration options (redacting fields, error reporting, outgoing requests, etc.) and complete integration guide, please read this [SDK documentation](https://apitoolkit.io/docs/sdks/nodejs/expressjs/utm_campaign=devrel&utm_medium=github&utm_source=sdks_readme).
