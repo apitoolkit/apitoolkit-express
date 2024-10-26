@@ -16,7 +16,6 @@ export type Config = {
   redactResponseBody?: string[];
   captureRequestBody?: boolean;
   captureResponseBody?: boolean;
-  clientMetadata?: ClientMetadata;
   tags?: string[];
   serviceVersion?: string;
   tracer: Tracer;
@@ -148,6 +147,7 @@ export class APIToolkit {
             // if (url_path !== "") {
             //   span.updateName(`${req.method} ${url_path}`);
             // }
+            span.setAttribute("net.host.name", req.hostname);
             span.setAttribute("at-project-key", this.apitoolkit_key || "");
             span.setAttribute("apitoolkit.msg_id", msg_id);
             span.setAttribute("http.route", url_path);
@@ -233,11 +233,14 @@ export class APIToolkit {
   public ReportError = ReportError;
 
   static NewClient(config: Config) {
-    const { rootURL = "https://app.apitoolkit.io", clientMetadata } = config;
+    const { rootURL = "https://app.apitoolkit.io" } = config;
 
-    if (!clientMetadata || config.apiKey != "") {
+    if (config.apiKey != "") {
       const clientMeta = this.getClientMetadata(rootURL, config.apiKey);
       return new APIToolkit(config, config.apiKey, clientMeta?.project_id);
+    }
+    if (config.apiKey == "") {
+      console.error("APIToolkit: apiKey is required");
     }
     return new APIToolkit(config, config.apiKey, undefined);
   }
