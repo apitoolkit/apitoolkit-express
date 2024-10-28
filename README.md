@@ -15,53 +15,16 @@ npm install apitoolkit-express
 
 ### Project setup
 
-Intialize apitoolkit into your project by providing `apikey` and `tracer` like so:
+Intialize apitoolkit into your project by providing `apikey` and `serviceName` like so:
 
 ```js
 import express from "express";
-import { logs, NodeSDK } from "@opentelemetry/sdk-node";
 import { APIToolkit } from "apitoolkit-express";
-import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-grpc";
-import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-grpc";
-import {
-  diag,
-  DiagConsoleLogger,
-  DiagLogLevel,
-  trace,
-} from "@opentelemetry/api";
-import { SemanticResourceAttributes } from "@opentelemetry/semantic-conventions";
-import { Resource } from "@opentelemetry/resources";
 
-const loggerLevel = DiagLogLevel.DEBUG;
-diag.setLogger(new DiagConsoleLogger(), loggerLevel);
-
-const defaultAttributes = {
-  [SemanticResourceAttributes.SERVICE_NAME]: "apitoolkit-js-express",
-  [SemanticResourceAttributes.SERVICE_VERSION]: "1.0.0",
-  environment: "production",
-  "at-api-key": "<API-KEY>",
-};
-
-const resource = new Resource(defaultAttributes);
-
-const logExporter = new OTLPLogExporter({
-  url: "http://otelcol.apitoolkit.io:4317",
+const apitoolkitClient = APIToolkit.NewClient({
+  apiKey: "<API-KEY>",
+  serviceName: "<YOUR_INSTRUMENTATION_SERVICE_NAME>",
 });
-
-const traceExporter = new OTLPTraceExporter({
-  url: "http://otelcol.apitoolkit.io:4317",
-});
-
-const sdk = new NodeSDK({
-  resource: resource,
-  logRecordProcessors: [new logs.SimpleLogRecordProcessor(logExporter)],
-  traceExporter,
-});
-sdk.start();
-
-const tracer = trace.getTracer("example-app");
-
-const apitoolkitClient = APIToolkit.NewClient({ apiKey: "<API-KEY>", tracer });
 ```
 
 where `<API-KEY>` is the API key which can be generated from your [apitoolkit.io](apitoolkit.io) account
