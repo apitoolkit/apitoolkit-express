@@ -1,4 +1,3 @@
-import { Tracer } from "@opentelemetry/api";
 import { Application, NextFunction, Request, Response } from "express";
 import { ReportError } from "apitoolkit-js";
 export { ReportError } from "apitoolkit-js";
@@ -6,6 +5,7 @@ export type Config = {
     apiKey: string;
     rootURL?: string;
     debug?: boolean;
+    serviceName: string;
     redactHeaders?: string[];
     redactRequestBody?: string[];
     redactResponseBody?: string[];
@@ -13,7 +13,6 @@ export type Config = {
     captureResponseBody?: boolean;
     tags?: string[];
     serviceVersion?: string;
-    tracer: Tracer;
 };
 type ClientMetadata = {
     project_id: string;
@@ -21,12 +20,12 @@ type ClientMetadata = {
     topic_id: string;
 };
 export declare class APIToolkit {
-    private tracer;
     private config;
     private project_id?;
     private apitoolkit_key?;
     private captureRequestBody?;
     private captureResponseBody?;
+    private serviceName;
     constructor(config: Config, apiKey: string, projectId?: string);
     expressErrorHandler(err: Error, _req: Request, _res: Response, next: NextFunction): void;
     errorHandler(err: Error, req: Request, res: Response, next: NextFunction): void;

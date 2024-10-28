@@ -1,7 +1,7 @@
 import fetch from "sync-fetch";
 import { v4 as uuidv4 } from "uuid";
 
-import { Span, Tracer } from "@opentelemetry/api";
+import { trace } from "@opentelemetry/api";
 import { Application, NextFunction, Request, Response } from "express";
 import { redactFields } from "apitoolkit-js/lib/payload";
 import { asyncLocalStorage, ReportError } from "apitoolkit-js";
@@ -11,6 +11,7 @@ export type Config = {
   apiKey: string;
   rootURL?: string;
   debug?: boolean;
+  serviceName: string;
   redactHeaders?: string[];
   redactRequestBody?: string[];
   redactResponseBody?: string[];
@@ -18,7 +19,6 @@ export type Config = {
   captureResponseBody?: boolean;
   tags?: string[];
   serviceVersion?: string;
-  tracer: Tracer;
 };
 
 type ClientMetadata = {
@@ -28,18 +28,18 @@ type ClientMetadata = {
 };
 
 export class APIToolkit {
-  private tracer: Tracer;
   private config: Config;
   private project_id?: string;
   private apitoolkit_key?: string;
   private captureRequestBody?: boolean;
   private captureResponseBody?: boolean;
+  private serviceName: string;
 
   constructor(config: Config, apiKey: string, projectId?: string) {
     this.config = config;
-    this.tracer = config.tracer;
     this.captureRequestBody = config.captureRequestBody || false;
     this.captureResponseBody = config.captureResponseBody || false;
+    this.serviceName = config.serviceName;
 
     if (projectId) {
       this.project_id = projectId;
@@ -77,13 +77,11 @@ export class APIToolkit {
     }
 
     asyncLocalStorage.run(new Map(), () => {
-      let span: Span | undefined;
       const store = asyncLocalStorage.getStore();
 
       const msg_id: string = uuidv4();
-      if (this.tracer) {
-        span = this.tracer.startSpan("apitoolkit-http-span");
-      }
+      const tracer = trace.getTracer(this.serviceName);
+      const span = tracer.startSpan("apitoolkit-http-span");
       if (store) {
         store.set("apitoolkit-span", span);
         store.set("apitoolkit-msg-id", msg_id);
@@ -144,9 +142,6 @@ export class APIToolkit {
             }
           }
           if (span) {
-            // if (url_path !== "") {
-            //   span.updateName(`${req.method} ${url_path}`);
-            // }
             span.setAttribute("net.host.name", req.hostname);
             span.setAttribute("at-project-key", this.apitoolkit_key || "");
             span.setAttribute("apitoolkit.msg_id", msg_id);
@@ -214,9 +209,7 @@ export class APIToolkit {
             console.log(error);
           }
         } finally {
-          if (this.tracer) {
-            span?.end();
-          }
+          span.end();
         }
       };
 
