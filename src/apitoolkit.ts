@@ -3,7 +3,6 @@ import { Span, trace } from '@opentelemetry/api';
 import { Application, NextFunction, Request, Response } from 'express';
 import { redactFields } from 'apitoolkit-js/lib/payload';
 import { asyncLocalStorage, ReportError } from 'apitoolkit-js';
-export { ReportError } from 'apitoolkit-js';
 
 type Config = {
   serviceName?: string;
@@ -171,7 +170,7 @@ const findMatchedRoute = (app: Application, method: string, url: string): string
   }
 };
 
-const reportError = ReportError;
+export const reportError = ReportError;
 
 function transformPath(params: Record<string, string>, path: string): string {
   let transformedPath = path;

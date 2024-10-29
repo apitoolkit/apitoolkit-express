@@ -14,6 +14,7 @@ type Config = {
 };
 export declare function expressMiddleware(config?: Config): (req: Request, res: Response, next: NextFunction) => void;
 export declare function expressErrorHandler(err: Error, _req: Request, _res: Response, next: NextFunction): void;
+export declare const reportError: typeof ReportError;
 declare const APIToolkit: {
     expressMiddleware: typeof expressMiddleware;
     expressErrorHandler: typeof expressErrorHandler;
