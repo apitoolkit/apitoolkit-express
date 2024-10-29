@@ -1,6 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
 import { ReportError } from 'apitoolkit-js';
-export { ReportError } from 'apitoolkit-js';
 type Config = {
     serviceName?: string;
     debug?: boolean;
