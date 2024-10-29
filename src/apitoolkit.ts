@@ -5,7 +5,7 @@ import { redactFields } from 'apitoolkit-js/lib/payload';
 import { asyncLocalStorage, ReportError } from 'apitoolkit-js';
 export { ReportError } from 'apitoolkit-js';
 
-export type Config = {
+type Config = {
   serviceName: string;
   debug?: boolean;
   redactHeaders?: string[];
@@ -17,49 +17,26 @@ export type Config = {
   serviceVersion?: string;
 };
 
-export class APIToolkit {
-  private config: Config;
-  private apitoolkit_key?: string;
-  private captureRequestBody?: boolean;
-  private captureResponseBody?: boolean;
-  private serviceName: string;
-
-  constructor(config: Config) {
-    this.config = config;
-    this.captureRequestBody = config.captureRequestBody || false;
-    this.captureResponseBody = config.captureResponseBody || false;
-    this.serviceName = config.serviceName;
-
-    this.expressMiddleware = this.expressMiddleware.bind(this);
-  }
-
-  public expressErrorHandler(err: Error, _req: Request, _res: Response, next: NextFunction) {
-    ReportError(err);
-    next(err);
-  }
-  public errorHandler(err: Error, req: Request, res: Response, next: NextFunction) {
-    return this.expressErrorHandler(err, req, res, next);
-  }
-
-  public expressMiddleware(req: Request, res: Response, next: NextFunction) {
+export function expressMiddleware(config: Config) {
+  return function expressMidd(req: Request, res: Response, next: NextFunction) {
     asyncLocalStorage.run(new Map(), () => {
       const store = asyncLocalStorage.getStore();
       const msg_id = uuidv4();
-      const span = trace.getTracer(this.serviceName).startSpan('apitoolkit-http-span');
+      const span = trace.getTracer(config.serviceName).startSpan('apitoolkit-http-span');
 
       if (store) {
         store.set('apitoolkit-span', span);
         store.set('apitoolkit-msg-id', msg_id);
         store.set('AT_errors', []);
       }
-      if (this.config?.debug) {
+      if (config.debug) {
         console.log('APIToolkit: expressMiddleware called');
       }
 
       let respBody: any = '';
       const oldSend = res.send;
       res.send = val => {
-        if (this.captureResponseBody) {
+        if (config.captureResponseBody) {
           respBody = val;
         }
         return oldSend.apply(res, [val]);
@@ -70,11 +47,11 @@ export class APIToolkit {
         res.removeListener('error', onRespFinished(req, res));
         res.removeListener('finish', onRespFinished(req, res));
         try {
-          const reqBody = this.getRequestBody(req);
-          const url_path = this.getUrlPath(req);
-          this.setAttributes(span, req, res, msg_id, url_path, reqBody, respBody);
+          const reqBody = getRequestBody(req, config.captureRequestBody || false);
+          const url_path = getUrlPath(req);
+          setAttributes(span, req, res, msg_id, url_path, reqBody, respBody, config);
         } catch (error) {
-          if (this.config?.debug) {
+          if (config.debug) {
             console.log(error);
           }
         } finally {
@@ -86,83 +63,82 @@ export class APIToolkit {
       res.on('finish', onRespFinishedCB).on('error', onRespFinishedCB);
       next();
     });
-  }
-  public ReportError = ReportError;
+  };
+}
 
-  static NewClient(config: Config) {
-    return new APIToolkit(config);
-  }
+function setAttributes(span: Span, req: Request, res: Response, msg_id: string, urlPath: string, reqBody: string, respBody: string, config: Config) {
+  span.setAttributes({
+    'net.host.name': req.hostname,
+    'apitoolkit.msg_id': msg_id,
+    'http.route': urlPath,
+    'http.request.method': req.method,
+    'http.response.status_code': res.statusCode,
+    'http.request.query_params': JSON.stringify(req.query),
+    'http.request.path_params': JSON.stringify(req.params),
+    'apitoolkit.sdk_type': 'JsExpress',
+    'http.request.body': Buffer.from(redactFields(reqBody, config.redactRequestBody || [])).toString('base64'),
+    'http.response.body': Buffer.from(redactFields(respBody, config.redactRequestBody || [])).toString('base64'),
+    'apitoolkit.errors': JSON.stringify(asyncLocalStorage.getStore()?.get('AT_errors') || []),
+    'apitoolkit.service_version': config.serviceVersion || '',
+    'apitoolkit.tags': config.tags || []
+  });
 
-  private setAttributes(span: Span, req: Request, res: Response, msg_id: string, urlPath: string, reqBody: string, respBody: string) {
-    span.setAttributes({
-      'net.host.name': req.hostname,
-      'at-project-key': this.apitoolkit_key || '',
-      'apitoolkit.msg_id': msg_id,
-      'http.route': urlPath,
-      'http.request.method': req.method,
-      'http.response.status_code': res.statusCode,
-      'http.request.query_params': JSON.stringify(req.query),
-      'http.request.path_params': JSON.stringify(req.params),
-      'apitoolkit.sdk_type': 'JsExpress',
-      'http.request.body': Buffer.from(redactFields(reqBody, this.config.redactRequestBody || [])).toString('base64'),
-      'http.response.body': Buffer.from(redactFields(respBody, this.config.redactRequestBody || [])).toString('base64'),
-      'apitoolkit.errors': JSON.stringify(asyncLocalStorage.getStore()?.get('AT_errors') || []),
-      'apitoolkit.service_version': this.config.serviceVersion || '',
-      'apitoolkit.tags': this.config.tags || []
-    });
+  const redactHeader = (header: string) =>
+    config.redactHeaders?.includes(header.toLowerCase()) || ['cookies', 'authorization'].includes(header.toLowerCase())
+      ? '[CLIENT_REDACTED]'
+      : header;
 
-    const redactHeader = (header: string) =>
-      this.config.redactHeaders?.includes(header.toLowerCase()) || ['cookies', 'authorization'].includes(header.toLowerCase())
-        ? '[CLIENT_REDACTED]'
-        : header;
+  Object.entries(req.headers).forEach(([header, value]) => span.setAttribute(`http.request.header.${header}`, redactHeader(String(value))));
+  Object.entries(res.getHeaders()).forEach(([header, value]) => span.setAttribute(`http.response.header.${header}`, redactHeader(String(value))));
+}
 
-    Object.entries(req.headers).forEach(([header, value]) => span.setAttribute(`http.request.header.${header}`, redactHeader(String(value))));
-    Object.entries(res.getHeaders()).forEach(([header, value]) => span.setAttribute(`http.response.header.${header}`, redactHeader(String(value))));
-  }
+export function expressErrorHandler(err: Error, _req: Request, _res: Response, next: NextFunction) {
+  ReportError(err);
+  next(err);
+}
 
-  private getRequestBody(req: Request): string {
-    const reqBody = '';
-    if (req.body && this.captureRequestBody) {
-      try {
-        if (req.is('multipart/form-data')) {
-          if (req.file) {
-            req.body[req.file.fieldname] = `[${req.file.mimetype}_FILE]`;
-          } else if (req.files) {
-            if (!Array.isArray(req.files)) {
-              for (const file in req.files) {
-                req.body[file] = (req.files[file] as any).map((f: any) => `[${f.mimetype}_FILE]`);
-              }
-            } else {
-              for (const file of req.files) {
-                req.body[file.fieldname] = `[${file.mimetype}_FILE]`;
-              }
+function getRequestBody(req: Request, captureRequestBody: boolean): string {
+  const reqBody = '';
+  if (req.body && captureRequestBody) {
+    try {
+      if (req.is('multipart/form-data')) {
+        if (req.file) {
+          req.body[req.file.fieldname] = `[${req.file.mimetype}_FILE]`;
+        } else if (req.files) {
+          if (!Array.isArray(req.files)) {
+            for (const file in req.files) {
+              req.body[file] = (req.files[file] as any).map((f: any) => `[${f.mimetype}_FILE]`);
+            }
+          } else {
+            for (const file of req.files) {
+              req.body[file.fieldname] = `[${file.mimetype}_FILE]`;
             }
           }
         }
-        return JSON.stringify(req.body);
-      } catch {
-        return String(req.body);
       }
+      return JSON.stringify(req.body);
+    } catch {
+      return String(req.body);
     }
-    return reqBody;
   }
-
-  private getUrlPath(req: Request): string {
-    let url_path = req.route?.path || '';
-    if (url_path == '' && req.method.toLowerCase() !== 'head') {
-      url_path = findMatchedRoute(req.app, req.method, req.originalUrl);
-    } else if (req.baseUrl && req.baseUrl != '') {
-      if (req.originalUrl.startsWith(req.baseUrl)) {
-        url_path = req.baseUrl + url_path;
-      } else {
-        url_path = findMatchedRoute(req.app, req.method, req.originalUrl);
-      }
-    }
-    return url_path;
-  }
+  return reqBody;
 }
 
-export const findMatchedRoute = (app: Application, method: string, url: string): string => {
+function getUrlPath(req: Request): string {
+  let url_path = req.route?.path || '';
+  if (url_path == '' && req.method.toLowerCase() !== 'head') {
+    url_path = findMatchedRoute(req.app, req.method, req.originalUrl);
+  } else if (req.baseUrl && req.baseUrl != '') {
+    if (req.originalUrl.startsWith(req.baseUrl)) {
+      url_path = req.baseUrl + url_path;
+    } else {
+      url_path = findMatchedRoute(req.app, req.method, req.originalUrl);
+    }
+  }
+  return url_path;
+}
+
+const findMatchedRoute = (app: Application, method: string, url: string): string => {
   try {
     const path = url.split('?')[0];
     const stack = app._router.stack;
@@ -192,6 +168,8 @@ export const findMatchedRoute = (app: Application, method: string, url: string):
   }
 };
 
+const reportError = ReportError;
+
 function transformPath(params: Record<string, string>, path: string): string {
   let transformedPath = path;
   for (const [key, value] of Object.entries(params)) {
@@ -200,4 +178,11 @@ function transformPath(params: Record<string, string>, path: string): string {
   }
   return transformedPath;
 }
+
+const APIToolkit = {
+  expressMiddleware,
+  expressErrorHandler,
+  reportError
+};
+
 export default APIToolkit;
