@@ -6,7 +6,7 @@ import { asyncLocalStorage, ReportError } from 'apitoolkit-js';
 export { ReportError } from 'apitoolkit-js';
 
 type Config = {
-  serviceName: string;
+  serviceName?: string;
   debug?: boolean;
   redactHeaders?: string[];
   redactRequestBody?: string[];
@@ -17,12 +17,15 @@ type Config = {
   serviceVersion?: string;
 };
 
-export function expressMiddleware(config: Config) {
+export function expressMiddleware(config?: Config) {
+  if (!config) {
+    config = {};
+  }
   return function expressMidd(req: Request, res: Response, next: NextFunction) {
     asyncLocalStorage.run(new Map(), () => {
       const store = asyncLocalStorage.getStore();
       const msg_id = uuidv4();
-      const span = trace.getTracer(config.serviceName).startSpan('apitoolkit-http-span');
+      const span = trace.getTracer(config.serviceName || '').startSpan('apitoolkit-http-span');
 
       if (store) {
         store.set('apitoolkit-span', span);

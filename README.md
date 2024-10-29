@@ -19,10 +19,21 @@ Intialize apitoolkit into your project by providing `serviceName` like so:
 
 ```js
 import express from 'express';
-import { APIToolkit } from 'apitoolkit-express';
+import { expressMiddleware, expressErrorHandler } from 'apitoolkit-express';
 
-const apitoolkitClient = APIToolkit.NewClient({
-  serviceName: '<YOUR_INSTRUMENTATION_SERVICE_NAME>'
+const app = express();
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(expressMiddleware());
+
+app.get('/hello/:name', (req, res) => {
+  res.json({ message: `Hello ${req.params.name}!` });
+});
+
+app.use(expressErrorHandler);
+
+app.listen(3000, () => {
+  console.log('Server started on port 3000');
 });
 ```
 
