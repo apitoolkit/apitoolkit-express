@@ -1,4 +1,3 @@
-import fetch from 'sync-fetch';
 import { v4 as uuidv4 } from 'uuid';
 import { Span, trace } from '@opentelemetry/api';
 import { Application, NextFunction, Request, Response } from 'express';
@@ -7,8 +6,8 @@ import { asyncLocalStorage, ReportError } from 'apitoolkit-js';
 export { ReportError } from 'apitoolkit-js';
 
 export type Config = {
-  debug?: boolean;
   serviceName: string;
+  debug?: boolean;
   redactHeaders?: string[];
   redactRequestBody?: string[];
   redactResponseBody?: string[];
@@ -16,10 +15,6 @@ export type Config = {
   captureResponseBody?: boolean;
   tags?: string[];
   serviceVersion?: string;
-};
-
-type ClientMetadata = {
-  project_id: string;
 };
 
 export class APIToolkit {
@@ -96,24 +91,6 @@ export class APIToolkit {
 
   static NewClient(config: Config) {
     return new APIToolkit(config);
-  }
-
-  static getClientMetadata(rootURL: string, apiKey: string) {
-    const resp = fetch(rootURL + '/api/client_metadata', {
-      method: 'GET',
-      headers: {
-        Authorization: 'Bearer ' + apiKey,
-        Accept: 'application/json'
-      }
-    });
-    if (!resp.ok) {
-      if (resp.status === 401) {
-        throw new Error('APIToolkit: Invalid API Key');
-      }
-      console.error(`Error getting apitoolkit client_metadata ${resp.status}`);
-      return;
-    }
-    return resp.json() as ClientMetadata;
   }
 
   private setAttributes(span: Span, req: Request, res: Response, msg_id: string, urlPath: string, reqBody: string, respBody: string) {
