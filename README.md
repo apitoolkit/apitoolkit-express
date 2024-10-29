@@ -15,15 +15,14 @@ npm install apitoolkit-express
 
 ### Project setup
 
-Intialize apitoolkit into your project by providing `apikey` and `serviceName` like so:
+Intialize apitoolkit into your project by providing `serviceName` like so:
 
 ```js
-import express from "express";
-import { APIToolkit } from "apitoolkit-express";
+import express from 'express';
+import { APIToolkit } from 'apitoolkit-express';
 
 const apitoolkitClient = APIToolkit.NewClient({
-  apiKey: "<API-KEY>",
-  serviceName: "<YOUR_INSTRUMENTATION_SERVICE_NAME>",
+  serviceName: '<YOUR_INSTRUMENTATION_SERVICE_NAME>'
 });
 ```
 
@@ -31,21 +30,9 @@ where `<API-KEY>` is the API key which can be generated from your [apitoolkit.io
 
 #### Quick overview of the configuration parameters
 
-In the configuration above, **only the `apiKey` and `tracer` fields required**, but you can add the following optional fields:
+In the configuration above, **only the `serviceName` field required**, but you can add the following optional fields:
 
-{class="docs-table"}
-:::
-| Option | Description |
-| ------ | ----------- |
-| `debug` | Set to `true` to enable debug mode. |
-| `tags` | A list of defined tags for your services (used for grouping and filtering data on the dashboard). |
-| `serviceVersion` | A defined string version of your application (used for further debugging on the dashboard). |
-| `redactHeaders` | A list of HTTP header keys to redact. |
-| `redactResponseBody` | A list of JSONPaths from the response body to redact. |
-| `redactRequestBody` | A list of JSONPaths from the request body to redact. |
-| `captureRequestBody` | default `false`, set to true if you want to capture the request body. |
-| `captureResponseBody` | default `false`, set to true if you want to capture the response body. |
-:::
+{class="docs-table"} ::: | Option | Description | | ------ | ----------- | | `debug` | Set to `true` to enable debug mode. | | `tags` | A list of defined tags for your services (used for grouping and filtering data on the dashboard). | | `serviceVersion` | A defined string version of your application (used for further debugging on the dashboard). | | `redactHeaders` | A list of HTTP header keys to redact. | | `redactResponseBody` | A list of JSONPaths from the response body to redact. | | `redactRequestBody` | A list of JSONPaths from the request body to redact. | | `captureRequestBody` | default `false`, set to true if you want to capture the request body. | | `captureResponseBody` | default `false`, set to true if you want to capture the response body. | :::
 
 <br />
 

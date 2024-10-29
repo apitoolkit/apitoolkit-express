@@ -1,6 +1,6 @@
-import { Application, NextFunction, Request, Response } from "express";
-import { ReportError } from "apitoolkit-js";
-export { ReportError } from "apitoolkit-js";
+import { Application, NextFunction, Request, Response } from 'express';
+import { ReportError } from 'apitoolkit-js';
+export { ReportError } from 'apitoolkit-js';
 export type Config = {
     apiKey: string;
     rootURL?: string;
@@ -16,8 +16,6 @@ export type Config = {
 };
 type ClientMetadata = {
     project_id: string;
-    pubsub_project_id: string;
-    topic_id: string;
 };
 export declare class APIToolkit {
     private config;
@@ -33,6 +31,9 @@ export declare class APIToolkit {
     ReportError: typeof ReportError;
     static NewClient(config: Config): APIToolkit;
     static getClientMetadata(rootURL: string, apiKey: string): ClientMetadata | undefined;
+    private setAttributes;
+    private getRequestBody;
+    private getUrlPath;
 }
 export declare const findMatchedRoute: (app: Application, method: string, url: string) => string;
 export default APIToolkit;

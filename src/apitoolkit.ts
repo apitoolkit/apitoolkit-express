@@ -7,8 +7,6 @@ import { asyncLocalStorage, ReportError } from 'apitoolkit-js';
 export { ReportError } from 'apitoolkit-js';
 
 export type Config = {
-  apiKey: string;
-  rootURL?: string;
   debug?: boolean;
   serviceName: string;
   redactHeaders?: string[];
@@ -26,22 +24,16 @@ type ClientMetadata = {
 
 export class APIToolkit {
   private config: Config;
-  private project_id?: string;
   private apitoolkit_key?: string;
   private captureRequestBody?: boolean;
   private captureResponseBody?: boolean;
   private serviceName: string;
 
-  constructor(config: Config, apiKey: string, projectId?: string) {
+  constructor(config: Config) {
     this.config = config;
     this.captureRequestBody = config.captureRequestBody || false;
     this.captureResponseBody = config.captureResponseBody || false;
     this.serviceName = config.serviceName;
-
-    if (projectId) {
-      this.project_id = projectId;
-      this.apitoolkit_key = apiKey;
-    }
 
     this.expressMiddleware = this.expressMiddleware.bind(this);
   }
@@ -55,11 +47,6 @@ export class APIToolkit {
   }
 
   public expressMiddleware(req: Request, res: Response, next: NextFunction) {
-    if (this.project_id === undefined) {
-      console.log('APIToolkit: expressMiddleware called, but apitoolkit was not correctly setup. Doing nothing.');
-      next();
-      return;
-    }
     asyncLocalStorage.run(new Map(), () => {
       const store = asyncLocalStorage.getStore();
       const msg_id = uuidv4();
@@ -108,16 +95,7 @@ export class APIToolkit {
   public ReportError = ReportError;
 
   static NewClient(config: Config) {
-    const { rootURL = 'https://app.apitoolkit.io' } = config;
-
-    if (config.apiKey != '') {
-      const clientMeta = this.getClientMetadata(rootURL, config.apiKey);
-      return new APIToolkit(config, config.apiKey, clientMeta?.project_id);
-    }
-    if (config.apiKey == '') {
-      console.error('APIToolkit: apiKey is required');
-    }
-    return new APIToolkit(config, config.apiKey, undefined);
+    return new APIToolkit(config);
   }
 
   static getClientMetadata(rootURL: string, apiKey: string) {
