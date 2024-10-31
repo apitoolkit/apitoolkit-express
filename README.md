@@ -24,7 +24,16 @@ import { APIToolkit } from 'apitoolkit-express';
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(APIToolkit.middleware());
+app.use(
+  APIToolkit.middleware({
+    serviceName: 'my-service',
+    redactHeaders: ['authorization', 'cookie'],
+    redactResponseBody: ['$.creditCardNumber'], // jsonpath to redact credit card number from response body
+    redactRequestBody: ['$.password'], // jsonpath to redact password from request body
+    captureRequestBody: true, // capture request body and send it to your apitoolkit dashboard
+    captureResponseBody: true // capture response body and send it to your apitoolkit dashboard
+  })
+);
 
 app.get('/hello/:name', (req, res) => {
   res.json({ message: `Hello ${req.params.name}!` });
@@ -53,35 +62,6 @@ An object with the following optional fields can be passed to the middleware to 
 | `redactRequestBody`   | A list of JSONPaths from the request body to redact.                                              |
 | `captureRequestBody`  | Default `false`, set to `true` if you want to capture the request body.                           |
 | `captureResponseBody` | Default `false`, set to `true` if you want to capture the response body.                          |
-
-### Usage with configuration parameters
-
-```js
-import express from 'express';
-import { APIToolkit } from 'apitoolkit-express';
-
-const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(
-  APIToolkit.middleware({
-    serviceName: 'my-service',
-    redactHeaders: ['authorization', 'cookie'],
-    redactResponseBody: ['$.creditCardNumber'], // jsonpath to redact credit card number from response body
-    redactRequestBody: ['$.password'], // jsonpath to redact password from request body
-    captureRequestBody: true,
-    captureResponseBody: true
-  })
-);
-
-app.get('/hello/:name', (req, res) => {
-  res.json({ message: `Hello ${req.params.name}!` });
-});
-
-app.listen(3000, () => {
-  console.log('Server started on port 3000');
-});
-```
 
 <br />
 
