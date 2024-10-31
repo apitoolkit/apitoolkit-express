@@ -11,12 +11,11 @@ type Config = {
     tags?: string[];
     serviceVersion?: string;
 };
-export declare function expressMiddleware(config?: Config): (req: Request, res: Response, next: NextFunction) => void;
-export declare function expressErrorHandler(err: Error, _req: Request, _res: Response, next: NextFunction): void;
-export declare const reportError: typeof ReportError;
-declare const APIToolkit: {
-    expressMiddleware: typeof expressMiddleware;
-    expressErrorHandler: typeof expressErrorHandler;
+declare function middleware(config?: Config): (req: Request, res: Response, next: NextFunction) => void;
+declare function errorMiddleware(): (err: Error, _req: Request, _res: Response, next: NextFunction) => void;
+export declare const APIToolkit: {
+    middleware: typeof middleware;
+    errorMiddleware: typeof errorMiddleware;
     reportError: typeof ReportError;
 };
 export default APIToolkit;

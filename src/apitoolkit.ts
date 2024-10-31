@@ -16,7 +16,7 @@ type Config = {
   serviceVersion?: string;
 };
 
-export function expressMiddleware(config?: Config) {
+function middleware(config?: Config) {
   if (!config) {
     config = {};
   }
@@ -94,9 +94,11 @@ function setAttributes(span: Span, req: Request, res: Response, msg_id: string, 
   Object.entries(res.getHeaders()).forEach(([header, value]) => span.setAttribute(`http.response.header.${header}`, redactHeader(String(value))));
 }
 
-export function expressErrorHandler(err: Error, _req: Request, _res: Response, next: NextFunction) {
-  ReportError(err);
-  next(err);
+function errorMiddleware() {
+  return function (err: Error, _req: Request, _res: Response, next: NextFunction) {
+    ReportError(err);
+    next(err);
+  };
 }
 
 function getRequestBody(req: Request, captureRequestBody: boolean): string {
@@ -170,7 +172,7 @@ const findMatchedRoute = (app: Application, method: string, url: string): string
   }
 };
 
-export const reportError = ReportError;
+const reportError = ReportError;
 
 function transformPath(params: Record<string, string>, path: string): string {
   let transformedPath = path;
@@ -181,10 +183,9 @@ function transformPath(params: Record<string, string>, path: string): string {
   return transformedPath;
 }
 
-const APIToolkit = {
-  expressMiddleware,
-  expressErrorHandler,
+export const APIToolkit = {
+  middleware,
+  errorMiddleware,
   reportError
 };
-
 export default APIToolkit;
